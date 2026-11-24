@@ -1,48 +1,153 @@
-# WuKong – Fabric Minecraft 26.3 (ESP Step 2)
+# WuKongClient
 
-Eigenständige, clientseitige Fabric-Mod. **Quellcode**: Java 25, Fabric Loader 0.20.1,
-Fabric API 0.166.2+26.3, Fabric Loom 1.19-SNAPSHOT.
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Developer](https://img.shields.io/badge/Developer-WKImods-orange)
+![Minecraft](https://img.shields.io/badge/Minecraft-26.3-green)
+![Modloader](https://img.shields.io/badge/Modloader-Fabric-beige)
+![Java](https://img.shields.io/badge/Java-25-orange)
+![Status](https://img.shields.io/badge/Status-Beta-yellow)
 
-## Änderungen zum bisherigen ESP Step 1
+### Your World. Your Rules. Your Client.
 
-- **Rebranding zu WuKong:** Mod-ID `wukong`, Anzeigename, GUI-Titel,
-  Java-Package `dev.wukong.client`, Mod-Entrypoint und JAR `wukong-fabric-...jar`.
-- **ESP Through Walls:** ON = gewohnte Boxen auch hinter Hindernissen;
-  OFF = nur Entities/Container mit freier Block-Sichtlinie zu mindestens einem
-  Hitbox-Punkt. Sichtbarkeit wird pro Spieltick aktualisiert (max. ca. 50 ms Verzögerung).
-- **ESP-Killswitch F7:** ON/OFF, mit Flankenerkennung; keine Auslösung beim Tippen in Menüs.
-  Bei OFF verschwinden **alle** ESP-Elemente einschließlich der alten HUD-Zielliste.
-- **Aim Spot** unter Insert > Target Rules: Torso, Head, Neck, All Visible.
-  Für Head/Neck/Torso werden geometrische Punkte in der Hitbox verwendet.
-  All Visible wählt den ersten Punkt mit freier Block-Sichtlinie (inklusive Hitbox-Ränder,
-  wenn z. B. nur eine Schulter hervorschaut). Das ist *keine* echte Erkennung
-  von Gliedmaßen-/Knochenmodellen; Minecraft-Mobs nutzen gewöhnlich eine AABB-Hitbox.
-- Die bestehende Bogen-Prediction und Separate-Camera-Interpolation bleiben erhalten.
-- Kein F6-Freecam-Modul.
+WuKongClient is an open-source, modular Minecraft client developed by WKImods and built on the Fabric modding framework.
 
-## Einstellungen übernehmen
+The project focuses on customization, quality-of-life improvements, visual enhancements, survival utilities and personalized gameplay configurations.
 
-WuKong benutzt `config/wukong.json`. Falls diese noch nicht existiert,
-kopiert die Mod beim ersten Start die **alte** `config/lunyxbench.json` nach
-`config/wukong.json` und liest sie ein. Die alte Datei bleibt erhalten.
-Der alte Zustand von `ESP Through Walls` war ON; für ältere Configs wird ON übernommen.
+## Core Features
 
-## Installation & Build
+### Visual Enhancements
 
-1. **Nicht in den alten Quellordner mischen:** ZIP in einen neuen WuKong-Ordner entpacken.
-2. PowerShell dort öffnen: `./gradlew.bat clean build --console=plain`
-3. Die normale JAR aus `build/libs` in `%appdata%\.minecraft\mods` kopieren.
-4. **Alle alten `lunyxbench-*.jar` aus dem Mods-Ordner entfernen**, bevor WuKong gestartet wird.
-5. Fabric API muss weiterhin installiert sein. Nicht die `-sources.jar` verwenden.
+- Fullbright 4.4
+- Customizable visual settings
+- Integrated rendering options
 
-Ein erfolgreicher Compilerlauf ist noch kein Ingame-Test. Der vollständige Minecraft-26.3-Build
-kann in dieser Umgebung ohne JDK25/Fabric-Gradle-Abhängigkeiten nicht ausgeführt werden.
+### Survival & Utilities
 
-## Grenzen / Hinweise
+- Auto Tool
+- Tool Saver
+- Auto Refill
+- Auto Eat
+- Inventory HUD
 
-- Die Boxen sind **Screen-Space-Projektionen** von 3D-Hitboxen, keine native 3D-Render-Pipeline.
-- Block-Sichtprüfung arbeitet mit Vanilla-Block-Raycasts und kann bei transparenten,
-  nicht vollständig kollidierenden Blöcken (z. B. Glas/Zaun) anders ausfallen als
-  visuelle Sichtbarkeit. `ClipContext.Block.COLLIDER` ignoriert reine Flüssigkeiten.
-- Die Anzeige nutzt ausschließlich vom Client geladene Chunks/Entitäten.
-- Nutzung im Multiplayer unterliegt den Regeln des jeweiligen Servers.
+### Navigation
+
+- Custom waypoints
+- Integrated waypoint editor
+- Automatic death markers
+- Individual world and server waypoints
+
+### Profile Manager+ (5.6)
+
+Currently undergoing testing.
+
+- Automatic server and world profile switching
+- Individual module configurations
+- Custom profile templates
+- Profile creation, duplication and renaming
+- Profile deletion with confirmation
+- JSON profile export
+- Partial JSON profile import
+- Conservative default settings for new multiplayer environments
+- Automatic configuration persistence
+
+### Customization
+
+- Integrated configuration interface
+- Customizable keybindings
+- Individual module settings
+- English and German localization
+- Integrated help interface
+
+## Requirements
+
+| Component | Version |
+|---|---|
+| Minecraft | 26.3 |
+| Mod Loader | Fabric |
+| Fabric Loader | 0.20.1+ |
+| Fabric API | 0.166.2+26.3 |
+| Java | 25 |
+
+## Installation
+
+1. Install Fabric for Minecraft 26.3.
+2. Download the compatible Fabric API.
+3. Download WuKongClient from the GitHub Releases section.
+4. Place both JAR files inside your `.minecraft/mods` directory.
+5. Launch Minecraft using your Fabric profile.
+
+## Downloads
+
+- [WuKongClient Releases](https://github.com/WKImods/WuKongClient/releases)
+- [Fabric API](https://modrinth.com/mod/fabric-api)
+- [Fabric Installer](https://fabricmc.net/use/installer/)
+
+## Development Roadmap
+
+- Extended Entity Filters
+- Damage Numbers
+- Configurable Zoom
+- Shulker Box Preview
+- Potion Effect HUD
+- Inventory Sorter
+- Auto Fish
+- Enchantment Information & Translation Overlay
+- Extended Profile Management
+- Server Compatibility Improvements
+- Performance Optimization
+- Additional Quality-of-Life Features
+
+## Building from Source
+
+Requirements:
+
+- Java Development Kit 25
+- Git
+- Internet connection for dependency resolution
+
+Windows:
+
+```powershell
+.\gradlew.bat clean build
+```
+
+Linux / macOS:
+
+```bash
+chmod +x gradlew
+./gradlew clean build
+```
+
+Compiled JAR files are located in `build/libs/`.
+
+## Development Status
+
+WuKongClient is currently in active beta development.
+
+Experimental features may contain bugs or compatibility issues. Features listed in the development roadmap are not necessarily available in current releases.
+
+Use modules only in environments where they are permitted.
+
+## Community & Contributions
+
+Contributions, bug reports, feature requests and constructive feedback are welcome.
+
+- [Report a Bug](https://github.com/WKImods/WuKongClient/issues)
+- [View Source Code](https://github.com/WKImods/WuKongClient)
+- [View Releases](https://github.com/WKImods/WuKongClient/releases)
+
+## License
+
+WuKongClient is licensed under the MIT License.
+
+Copyright (c) 2026 WKImods.
+
+## Developer
+
+**WKImods**
+
+Independent Mod Development & Software Engineering.
+
+**Built with passion. Driven by curiosity.**
+
+WuKongClient is an independent project and is not affiliated with Mojang Studios or Microsoft.
