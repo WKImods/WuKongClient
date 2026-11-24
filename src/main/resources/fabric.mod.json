@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "wukong",
+  "version": "${version}",
+  "name": "WuKong",
+  "description": "WuKong client tools for Minecraft 26.3 (Fabric).",
+  "authors": [
+    "WuKong"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.wukong.client.WuKong"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "wukong.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
