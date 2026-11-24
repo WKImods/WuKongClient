@@ -1,6 +1,41 @@
+# Gradle / generated output
 .gradle/
 .gradle-dist/
 build/
+out/
+
+# Minecraft runtime
 run/
+logs/
+crash-reports/
+saves/
+
+# IDE
 .idea/
+.vscode/
 *.iml
+
+# Build artifacts
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Backups and archives
+backups/
+.lunyx-backup*/
+*.bak
+*.zip
+*.rar
+*.7z
+
+# Local settings and secrets
+.env
+.env.*
+local.properties
+*.jks
+*.keystore
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
