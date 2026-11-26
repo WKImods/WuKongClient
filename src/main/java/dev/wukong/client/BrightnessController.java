@@ -15,13 +15,13 @@ public final class BrightnessController {
      */
     public static boolean shouldRefresh() {
         return Minecraft.getInstance().level != null
-                && (BenchConfig.INSTANCE.fullbrightEnabled || previouslyEnabled);
+                && ((BenchConfig.INSTANCE.visualMasterEnabled && BenchConfig.INSTANCE.fullbrightEnabled) || previouslyEnabled);
     }
 
     /** Called at extract() TAIL after the original vanilla data was populated. */
     public static void apply(LightmapRenderState state) {
         boolean enabled = Minecraft.getInstance().level != null
-                && BenchConfig.INSTANCE.fullbrightEnabled;
+                && BenchConfig.INSTANCE.visualMasterEnabled && BenchConfig.INSTANCE.fullbrightEnabled;
         if (!enabled) {
             if (previouslyEnabled) {
                 // The extractor ran with its dirty flag set at HEAD. Its output

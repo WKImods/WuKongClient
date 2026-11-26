@@ -4,7 +4,15 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "CameraMixin",
-    "LightmapMixin"
+    "LightmapMixin",
+    "ItemPreviewMixin",
+    "ClientTooltipMixin",
+    "FishingHookAccessor",
+    "InventoryQuickSortMixin",
+    "EnchantmentTooltipMixin",
+    "MerchantTradeTooltipMixin",
+    "ZoomCameraMixin",
+    "ZoomMouseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

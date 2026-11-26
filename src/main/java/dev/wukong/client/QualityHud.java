@@ -14,7 +14,7 @@ public final class QualityHud {
         if (mc.level != level) { level=mc.level; dead=false; }
         if (mc.player==null || mc.level==null) return;
         boolean nowDead=mc.player.isDeadOrDying();
-        if (nowDead && !dead) WaypointManager.recordDeath(mc);
+        if (nowDead && !dead && BenchConfig.INSTANCE.espEnabled && BenchConfig.INSTANCE.deathMarkerEnabled) WaypointManager.recordDeath(mc);
         dead=nowDead;
     }
 
@@ -30,7 +30,8 @@ public final class QualityHud {
     public static void draw(GuiGraphicsExtractor g) {
         Minecraft mc=Minecraft.getInstance();
         BenchConfig cfg=BenchConfig.INSTANCE;
-        if (mc.player==null || mc.level==null) return;
+        if (mc.player==null || mc.level==null || !cfg.hudMasterEnabled) return;
+        HudStudio.draw(g,mc,false);
         if (cfg.inventoryHudEnabled) {
             int bx=8,by=g.guiHeight()-54;
             ItemStack hand=mc.player.getMainHandItem();

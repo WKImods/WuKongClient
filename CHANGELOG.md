@@ -1,26 +1,65 @@
 # Changelog
 
-All notable changes to WuKongClient are documented here. Internal patch numbers and build versions are kept distinct.
+Notable changes to WuKongClient are recorded here. Internal development milestones are not necessarily separate public releases.
 
-## Unreleased
+## 6.0.1-beta.1 — Smart Auto Feeder
 
-### Build infrastructure
-- Add the Gradle 9.8.2 wrapper for Windows, Linux and macOS.
-- Add a GitHub Actions build workflow using Java 25.
-- Add repository exclusions for local Gradle distributions, caches and backups.
+### Added
+- Opt-in integrated-server Background mode for Auto Eat in singleplayer.
+- Localized Standard/Background mode selection and Standard-mode reset.
+- Background inventory consumption without changing the selected hotbar slot or starting the hand-use animation.
+- Inventory-state, lifecycle, manual-use and cooldown checks for background consumption.
 
-### Patch 5.5 (pending integration and verification)
-- Server and singleplayer world configuration profiles (includes step 5.4).
-- Extras screen and German/English manual.
-- Default keybindings and global UI language preferences.
-- Patch requires Waypoint Fix 5.3.1. The patch is not assumed to be part of the published source or binary until verified.
+### Preserved
+- Standard Auto Eat mode, enabled state and hunger threshold.
+- Normal food-use duration and consumption behavior by design.
+- Existing Fullbright, HUD, Inventory Sorter and Auto Refill implementations.
+- No automatic fallback from Background to Standard on remote servers.
 
-## Internal development baseline
+### Verification
+- Background Auto Feeder reported working in-game by the project owner.
+- Full regression testing, fresh-install verification and individual food edge cases remain open.
 
-Build identifier: `2.0.0-fabric-dev8-fullbright44`.
+## 6.0.0-beta.1 — Client Evolution
 
-- Minecraft 26.3 / Fabric Loader 0.20.1 / Java 25.
-- Fullbright 4.4 reported working in-game by the project owner.
-- Waypoint Fix 5.3.1 and repaired CameraMixin reported working by the project owner in the latest local build; exact repository revision not yet verified.
+- Hierarchical module interface with category master switches and individual configuration screens.
+- Module search, favorites, four theme presets and Quick Menu.
+- GitHub release update checker and session-based Notification Center.
+- Configuration recovery and backup protection.
+- Dynamic Zoom (hold C, adjust with mouse wheel).
+- Fixed HUD dragging, HUD scaling and German special characters.
+- Refined profile selection and persistent settings.
+- Owner confirmed successful compilation and 15/21 initial in-game checks; subsequently confirmed Quick Menu and favorite persistence, and located theme switching and the update checker.
 
-No public stable release is claimed by this changelog.
+## 5.9 — HUD Studio (including 5.9.1 and 5.9.2)
+
+- Armor HUD, Potion HUD, FPS and ping, Resource Tracker and HUD Editor.
+- Individual positions, scales and opacity controls.
+- Smart Auto Refill improvements for manual inventory interactions.
+- Searchable item registry and improved profile selection.
+- Dedicated HUD configuration controls; final movement and scaling fixes confirmed in 6.0.
+
+## 5.8 — Intelligent Tooltips (including 5.8.1)
+
+- Enchantment Info+ with localized explanations and level information.
+- Trade Calculator with trade prices, adjustments, uses and comparisons.
+- Integrated-server inventory sorting fix: no empty hotbar slot requirement and persistent sorting.
+
+## 5.7 — Smart Inventory (including 5.7.1)
+
+- Shulker and Bundle previews.
+- Singleplayer Inventory Sorter and Auto Fish.
+- Inventory Quick Sort button, cursor protection and rapid-click protection.
+
+## 5.6 — Profile Manager+
+
+- World/server profiles, reusable templates, creation, duplication, renaming and deletion.
+- JSON import/export and configuration persistence improvements.
+
+## Earlier development baseline
+
+- Fullbright 4.4, waypoints and core survival utilities.
+- Gradle wrapper and GitHub Actions build infrastructure for Java 25.
+- Previous internal build identifier: `2.0.0-fabric-dev8-fullbright44`.
+
+No stable release is claimed by this changelog.

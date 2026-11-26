@@ -1,6 +1,6 @@
 {
   "key.category.wukong.controls": "WuKong",
-  "key.wukong.menu": "WuKong-Menü öffnen",
+  "key.wukong.menu": "WuKong-Men\u00fc \u00f6ffnen",
   "key.wukong.aim": "Zielhilfe (Halten/Umschalten)",
   "key.wukong.esp": "ESP gesamt umschalten",
   "key.wukong.ore": "Ore Finder umschalten",
@@ -26,7 +26,7 @@
   "key.wukong.ore_lapis": "Erzfilter: Lapis",
   "key.wukong.ore_coal": "Erzfilter: Coal",
   "key.wukong.ore_quartz": "Erzfilter: Quartz",
-  "key.wukong.through_walls": "ESP durch Wände (Strg + Taste)",
+  "key.wukong.through_walls": "ESP durch W\u00e4nde (Strg + Taste)",
   "key.wukong.boxes": "ESP Boxen",
   "key.wukong.tracers": "ESP Tracer",
   "key.wukong.labels": "ESP Beschriftungen",
@@ -39,5 +39,9 @@
   "key.wukong.auto_tool": "AutoTool (Abbau) (Strg + Taste)",
   "key.wukong.tool_saver": "Werkzeugschutz (Strg + Taste)",
   "key.wukong.auto_refill": "Auto Refill (Hotbar) (Strg + Taste)",
-  "key.wukong.auto_eat": "Automatisch essen (Strg + Taste)"
+  "key.wukong.auto_eat": "Automatisch essen (Strg + Taste)",
+  "key.wukong.sort_inventory": "Inventar sortieren",
+  "key.wukong.auto_fish": "Auto-Angeln",
+  "key.wukong.zoom": "Dynamischer Zoom (halten)",
+  "key.wukong.quick_menu": "Schnellmen\u00fc"
 }

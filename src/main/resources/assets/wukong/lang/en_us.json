@@ -39,5 +39,9 @@
   "key.wukong.auto_tool": "AutoTool (mining) (Ctrl + key)",
   "key.wukong.tool_saver": "Tool Saver (Ctrl + key)",
   "key.wukong.auto_refill": "Auto Refill (hotbar) (Ctrl + key)",
-  "key.wukong.auto_eat": "Auto Eat (Ctrl + key)"
+  "key.wukong.auto_eat": "Auto Eat (Ctrl + key)",
+  "key.wukong.sort_inventory": "Sort inventory",
+  "key.wukong.auto_fish": "Auto Fish",
+  "key.wukong.zoom": "Dynamic Zoom (hold)",
+  "key.wukong.quick_menu": "Quick Menu"
 }

@@ -7,10 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class BenchConfig {
-    public boolean players = true;
+    public boolean players = false;
     public boolean hostile = true;
     public boolean passive = true;
-    public boolean containers = true;
+    public boolean containers = false;
     public boolean distanceLabels = true;
     public boolean localGlow = false;
     // ESP layer. Defaults to off; existing category/range settings are reused.
@@ -21,7 +21,7 @@ public final class BenchConfig {
     public boolean espNames = true;
     // Split visuals: entity mobs and ore veins do not share box/name toggles.
     // Players, storage and world ESP still use espBoxes/espNames.
-    public boolean mobEspEnabled = true;
+    public boolean mobEspEnabled = false;
     public boolean mobEspBoxes = true;
     public boolean mobEspNames = true;
     public boolean oreEspBoxes = true;
@@ -31,16 +31,54 @@ public final class BenchConfig {
     public boolean spawnerEspEnabled = false;
     public boolean enhancedNametags = false;
     public boolean fullbrightEnabled = false;
+    // Category switches are independent of stored child preferences.
+    public boolean visualMasterEnabled=false, survivalMasterEnabled=false,
+        inventoryMasterEnabled=false, tooltipsMasterEnabled=false, hudMasterEnabled=false;
+    public boolean zoomEnabled=false, zoomSmooth=false, zoomAdaptive=false, zoomRemember=false;
+    public int zoomStart=4, zoomMax=50;
+    public double zoomRemembered=4.0;
+    static void migrateMasters(com.google.gson.JsonObject data) {
+        addMaster(data,"visualMasterEnabled","fullbrightEnabled","zoomEnabled");
+        addMaster(data,"survivalMasterEnabled","autoToolEnabled","toolSaverEnabled","autoRefillEnabled","autoEatEnabled");
+        addMaster(data,"inventoryMasterEnabled","shulkerPreviewEnabled","bundlePreviewEnabled","inventorySorterEnabled","autoFishEnabled");
+        addMaster(data,"tooltipsMasterEnabled","enchantmentInfoEnabled","tradeCalculatorEnabled");
+        addMaster(data,"hudMasterEnabled","inventoryHudEnabled","armorHudEnabled","potionHudEnabled","performanceHudEnabled","resourceHudEnabled");
+    }
+    private static void addMaster(com.google.gson.JsonObject data,String name,String... children) {
+        if(data.has(name)) return;
+        boolean enabled=false;
+        for(String child:children) {
+            var v=data.get(child);
+            if(v!=null && v.isJsonPrimitive() && v.getAsJsonPrimitive().isBoolean() && v.getAsBoolean()) enabled=true;
+        }
+        data.addProperty(name,enabled);
+    }
     public boolean waypointsEnabled = false;
     public boolean deathMarkerEnabled = false;
     public boolean inventoryHudEnabled = false;
-    public boolean storageEspPlus = true;
+    public boolean armorHudEnabled = false, potionHudEnabled = false, performanceHudEnabled = false, resourceHudEnabled = false;
+    public int armorHudX=20, armorHudY=200, potionHudX=20, potionHudY=450,
+        performanceHudX=750, performanceHudY=20, resourceHudX=750, resourceHudY=300;
+    public int armorHudScale=100, potionHudScale=100, performanceHudScale=100, resourceHudScale=100;
+    public int armorHudOpacity=65, potionHudOpacity=65, performanceHudOpacity=65, resourceHudOpacity=65;
+    public String appliedProfileName="";
+    public String resourceHudItem="minecraft:stone";
+    public int resourceHudGoal=64;
+    public boolean storageEspPlus = false;
     // Survival automation: disabled by default; hotkeys configured in Minecraft controls.
     public boolean autoToolEnabled = false;
     public boolean toolSaverEnabled = false;
     public int toolSaverMinDurability = 8; // Remaining uses, 1..100.
     public boolean autoRefillEnabled = false;
     public boolean autoEatEnabled = false;
+    public boolean autoEatBackground = false; // Opt-in, integrated server only.
+    public boolean shulkerPreviewEnabled = false;
+    public boolean bundlePreviewEnabled = false;
+    public boolean inventorySorterEnabled = false;
+    public boolean autoFishEnabled = false;
+    public boolean enchantmentInfoEnabled = false;
+    public boolean enchantmentInfoShiftOnly = true;
+    public boolean tradeCalculatorEnabled = false;
     public int autoEatHungerThreshold = 14; // 1..19 food points.
 
     public java.util.Map<String, Boolean> oreTypes = defaultOreTypes();
@@ -110,12 +148,14 @@ public final class BenchConfig {
             }
             if (Files.isRegularFile(configPath)) {
                 String raw = Files.readString(configPath);
-                BenchConfig cfg=JSON.fromJson(raw,BenchConfig.class);
+                var data=com.google.gson.JsonParser.parseString(raw).getAsJsonObject();
+                migrateMasters(data);
+                BenchConfig cfg=JSON.fromJson(data,BenchConfig.class);
                 if(cfg!=null) {
                     // Gson initializes missing numeric fields to 0 instead of the field default.
                     // Gson does not execute field initializers when fields are absent.
                     // Previously saved configs get sensible first-run ESP defaults.
-                    if (!raw.contains("\"storageEspPlus\"")) cfg.storageEspPlus = true;
+                    if (!raw.contains("\"storageEspPlus\"")) cfg.storageEspPlus = false;
                     if (!raw.contains("\"toolSaverMinDurability\"")) cfg.toolSaverMinDurability = 8;
                     if (!raw.contains("\"autoEatHungerThreshold\"")) cfg.autoEatHungerThreshold = 14;
                     cfg.toolSaverMinDurability = Math.max(1, Math.min(100, cfg.toolSaverMinDurability));
@@ -153,7 +193,7 @@ public final class BenchConfig {
                     if (!raw.contains("\"espBoxes\"")) cfg.espBoxes = true;
                     if (!raw.contains("\"espNames\"")) cfg.espNames = true;
                     if (!raw.contains("\"espThroughWalls\"")) cfg.espThroughWalls = true;
-                    if (!raw.contains("\"mobEspEnabled\"")) cfg.mobEspEnabled = true;
+                    if (!raw.contains("\"mobEspEnabled\"")) cfg.mobEspEnabled = false;
                     // Older ESP visuals apply on first migration, then become independent.
                     if (!raw.contains("\"mobEspBoxes\"")) cfg.mobEspBoxes = cfg.espBoxes;
                     if (!raw.contains("\"mobEspNames\"")) cfg.mobEspNames = cfg.espNames;
@@ -180,13 +220,14 @@ public final class BenchConfig {
                     return cfg;
                 }
             }
-        } catch (Exception e) { System.err.println("[WuKong] Config read: "+e); }
+        } catch (Exception e) { ConfigRecovery.preserve(path(),e); System.err.println("[WuKong] Config read: "+e); }
         return new BenchConfig();
     }
     /** Save settings to the active world/server profile, never to another world. */
     public void save() {
         Path destination = ServerProfiles.activeConfigPath();
         if (destination == null) destination = path();
+        if(!ConfigRecovery.canWrite(destination)) return;
         try {
             Files.createDirectories(destination.getParent());
             Path temp = Files.createTempFile(destination.getParent(), "wukong-save-", ".tmp");

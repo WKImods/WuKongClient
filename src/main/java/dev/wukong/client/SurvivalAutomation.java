@@ -11,12 +11,14 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-/** Survival helpers. Only client-side, uses vanilla inventory packets for swaps. */
+/** Survival helpers. Standard actions use vanilla client input; opt-in background eating is local-server only. */
 public final class SurvivalAutomation {
     private static Object world;
     private static final ItemStack[] refillMemory = new ItemStack[9];
     private static final int[] refillRetry = new int[9];
     private static int clock;
+    private static int refillQuietUntil;
+    private static int previousUseSlot=-1;
     private static boolean autoEating;
     private static int previousSelected = -1;
     private static int eatingSlot = -1;
@@ -27,16 +29,19 @@ public final class SurvivalAutomation {
     private static int toolPreviousSlot = -1, toolSelectedSlot = -1;
 
     public static void install() {
+        BackgroundAutoEat.install();
         // Prevent starting a new mining action with a critically worn tool.
         AttackBlockCallback.EVENT.register((player, level, hand, pos, direction) -> {
             if (!level.isClientSide() || hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;
             var mc = Minecraft.getInstance();
-            if (!BenchConfig.INSTANCE.toolSaverEnabled || mc.player != player) return InteractionResult.PASS;
+            if (!BenchConfig.INSTANCE.survivalMasterEnabled || !BenchConfig.INSTANCE.toolSaverEnabled || mc.player != player) return InteractionResult.PASS;
             return protectedTool(player.getMainHandItem()) ? InteractionResult.FAIL : InteractionResult.PASS;
         });
     }
 
     public static void tick(Minecraft mc, boolean gameplayAllowed) {
+        // Keep the local server request in sync even when leaving a world or opening a GUI.
+        BackgroundAutoEat.publish(mc, gameplayAllowed && !autoEating);
         if (mc.level == null || mc.player == null || mc.level != world) {
             world = mc.level;
             for (int i=0;i<9;i++) { refillMemory[i]=null; refillRetry[i]=0; }
@@ -44,27 +49,33 @@ public final class SurvivalAutomation {
             if (autoEating) mc.options.keyUse.setDown(false);
             autoEating = false; previousSelected = -1; eatingSlot = -1;
             eatTicks = 0; foodCountAtStart = 0; foodAtStart = ItemStack.EMPTY;
-            eatCooldown = 0; clock = 0; toolPreviousSlot=-1; toolSelectedSlot=-1;
+            eatCooldown = 0; clock = 0; refillQuietUntil=5; previousUseSlot=-1; toolPreviousSlot=-1; toolSelectedSlot=-1;
             if (mc.player == null || mc.level == null) return;
         }
         clock++;
         if (eatCooldown>0) eatCooldown--;
         var cfg = BenchConfig.INSTANCE;
         // Never automate inventory or held items while a GUI is open.
-        if (!gameplayAllowed || mc.gameMode == null) {
+        if (!gameplayAllowed || mc.gameMode == null || !cfg.survivalMasterEnabled) {
             if (autoEating) finishEating(mc, true);
+            if(gameplayAllowed && !cfg.survivalMasterEnabled) restoreAfterMining(mc);
             rememberHotbar(mc);
+            previousUseSlot=-1; refillQuietUntil=clock+5;
             return;
         }
         // Autorefill only observes normal inventory contents; it never writes to
         // the client-only Inventory directly, and never touches a damaged tool.
-        if (cfg.autoRefillEnabled && !autoEating) refill(mc);
+        if (cfg.autoRefillEnabled && !autoEating && clock>=refillQuietUntil && !mc.options.keyDrop.isDown()) refill(mc);
         else rememberHotbar(mc);
+        previousUseSlot=(mc.options.keyUse.isDown() || mc.player.isUsingItem()) && !mc.options.keyDrop.isDown()
+                ? mc.player.getInventory().getSelectedSlot() : -1;
         if (autoEating) { /* Auto Eat owns the selected hotbar slot. */ }
         else if (cfg.autoToolEnabled && mc.options.keyAttack.isDown()) chooseTool(mc);
         else restoreAfterMining(mc);
         if (cfg.toolSaverEnabled) protectSelectedTool(mc);
-        handleAutoEat(mc);
+        if (cfg.autoEatBackground) {
+            if (autoEating) finishEating(mc, true);
+        } else handleAutoEat(mc);
     }
 
     private static boolean protectedTool(ItemStack stack) {
@@ -125,7 +136,9 @@ public final class SurvivalAutomation {
                 continue;
             }
             ItemStack remembered=refillMemory[i];
-            if (remembered==null || clock<refillRetry[i]) continue;
+            refillMemory[i]=null; // Never resurrect an intentionally emptied slot.
+            if (remembered==null || remembered.getCount()!=1 || i!=previousUseSlot
+                    || i!=inv.getSelectedSlot() || clock<refillRetry[i]) continue;
             for (int slot=9;slot<36;slot++) {
                 ItemStack candidate=inv.getItem(slot);
                 if (!candidate.isEmpty() && ItemStack.isSameItemSameComponents(remembered,candidate)) {
@@ -143,11 +156,11 @@ public final class SurvivalAutomation {
         var inv=mc.player.getInventory();
         for(int i=0;i<9;i++) {
             ItemStack stack=inv.getItem(i);
-            if (!stack.isEmpty()) refillMemory[i] = stack.isDamageableItem()?null:stack.copy();
+            refillMemory[i] = stack.isEmpty() || stack.isDamageableItem()?null:stack.copy();
         }
     }
 
-    private static boolean isSafeFood(ItemStack stack) {
+    static boolean isSafeFood(ItemStack stack) {
         if (stack.isEmpty() || !stack.has(DataComponents.FOOD) || !stack.has(DataComponents.CONSUMABLE)) return false;
         return stack.getItem()!=Items.PUFFERFISH && stack.getItem()!=Items.POISONOUS_POTATO
                 && stack.getItem()!=Items.SPIDER_EYE && stack.getItem()!=Items.ROTTEN_FLESH

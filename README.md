@@ -9,54 +9,31 @@
 
 ### Your World. Your Rules. Your Client.
 
-WuKongClient is an open-source, modular Minecraft client developed by WKImods and built on the Fabric modding framework.
+WuKongClient is a free, open-source, modular Minecraft Fabric client developed by WKImods. It focuses on quality-of-life utilities, visual customization, survival assistance, inventory management and personalized world and server configurations.
 
-The project focuses on customization, quality-of-life improvements, visual enhancements, survival utilities and personalized gameplay configurations.
+**Current development version:** `6.0.1-beta.1` — Smart Auto Feeder.
 
-## Core Features
+## Features
 
-### Visual Enhancements
+| Category | Features |
+|---|---|
+| Visuals | Fullbright 4.4, Dynamic Zoom with adjustable magnification |
+| Survival | Auto Tool, Tool Saver, Smart Auto Refill, Auto Eat |
+| Smart Inventory | Shulker and Bundle previews, Inventory Quick Sort, Auto Fish |
+| Intelligent Tooltips | Enchantment Info+, Trade Calculator |
+| Navigation | Custom waypoints, waypoint editor, death markers |
+| HUD Studio | Armor, potions, FPS and ping, resource tracker, adjustable position, scale and opacity |
+| Profiles | World/server profiles, reusable templates, JSON import/export, persistent settings |
+| Client Evolution | Hierarchical module interface, category master switches, search, favorites, themes, Quick Menu, update checker and notifications |
 
-- Fullbright 4.4
-- Customizable visual settings
-- Integrated rendering options
+### Smart Auto Feeder
 
-### Survival & Utilities
+Choose the mode in **Survival > Auto Eat > Config > Mode**:
 
-- Auto Tool
-- Tool Saver
-- Auto Refill
-- Auto Eat
-- Inventory HUD
+- **Standard (Hotbar):** existing automatic eating behavior; suitable for permitted multiplayer environments.
+- **Background (Singleplayer):** opt-in integrated-server consumption from inventory without changing the selected hotbar slot or starting the hand-use animation. The normal food-use duration, hunger, saturation and consumption effects are retained by design.
 
-### Navigation
-
-- Custom waypoints
-- Integrated waypoint editor
-- Automatic death markers
-- Individual world and server waypoints
-
-### Profile Manager+ (5.6)
-
-Currently undergoing testing.
-
-- Automatic server and world profile switching
-- Individual module configurations
-- Custom profile templates
-- Profile creation, duplication and renaming
-- Profile deletion with confirmation
-- JSON profile export
-- Partial JSON profile import
-- Conservative default settings for new multiplayer environments
-- Automatic configuration persistence
-
-### Customization
-
-- Integrated configuration interface
-- Customizable keybindings
-- Individual module settings
-- English and German localization
-- Integrated help interface
+Background mode is inactive on external servers. There is no automatic mode fallback. Standard remains the default. Use optional modules only in environments where their functionality is permitted.
 
 ## Requirements
 
@@ -71,83 +48,46 @@ Currently undergoing testing.
 ## Installation
 
 1. Install Fabric for Minecraft 26.3.
-2. Download the compatible Fabric API.
-3. Download WuKongClient from the GitHub Releases section.
-4. Place both JAR files inside your `.minecraft/mods` directory.
-5. Launch Minecraft using your Fabric profile.
+2. Download the compatible Fabric API and the regular WuKongClient JAR from Releases.
+3. Remove older WuKongClient JARs from your `mods` directory, then place the new JAR and Fabric API there.
+4. Launch Minecraft using the Fabric profile.
+5. Configure modules individually. Do not install a `-sources.jar` in the mods directory.
 
-## Downloads
+[Releases](https://github.com/WKImods/WuKongClient/releases) · [Fabric API](https://modrinth.com/mod/fabric-api) · [Fabric Installer](https://fabricmc.net/use/installer/)
 
-- [WuKongClient Releases](https://github.com/WKImods/WuKongClient/releases)
-- [Fabric API](https://modrinth.com/mod/fabric-api)
-- [Fabric Installer](https://fabricmc.net/use/installer/)
+## Building from source
 
-## Development Roadmap
-
-- Extended Entity Filters
-- Damage Numbers
-- Configurable Zoom
-- Shulker Box Preview
-- Potion Effect HUD
-- Inventory Sorter
-- Auto Fish
-- Enchantment Information & Translation Overlay
-- Extended Profile Management
-- Server Compatibility Improvements
-- Performance Optimization
-- Additional Quality-of-Life Features
-
-## Building from Source
-
-Requirements:
-
-- Java Development Kit 25
-- Git
-- Internet connection for dependency resolution
+Java Development Kit 25 and an internet connection for dependency resolution are required.
 
 Windows:
 
 ```powershell
-.\gradlew.bat clean build
+.\gradlew.bat clean build --console=plain
 ```
 
-Linux / macOS:
+Linux/macOS:
 
 ```bash
 chmod +x gradlew
-./gradlew clean build
+./gradlew clean build --console=plain
 ```
 
-Compiled JAR files are located in `build/libs/`.
+Build outputs are located in `build/libs/`.
 
-## Development Status
+## Project status
 
-WuKongClient is currently in active beta development.
+Active beta development. The owner has reported successful in-game testing of the new Background Auto Feeder. Additional regression and clean-install verification remains open; this is not a stable-release claim. Optional modules are intended to start disabled on a fresh installation.
 
-Experimental features may contain bugs or compatibility issues. Features listed in the development roadmap are not necessarily available in current releases.
+See [CHANGELOG.md](CHANGELOG.md) and [ROADMAP.md](ROADMAP.md) for development history and outstanding checks.
 
-Use modules only in environments where they are permitted.
+## Community & contributions
 
-## Community & Contributions
-
-Contributions, bug reports, feature requests and constructive feedback are welcome.
-
-- [Report a Bug](https://github.com/WKImods/WuKongClient/issues)
-- [View Source Code](https://github.com/WKImods/WuKongClient)
-- [View Releases](https://github.com/WKImods/WuKongClient/releases)
+[Report a bug or request a feature](https://github.com/WKImods/WuKongClient/issues). Please include the client version, environment and steps to reproduce any issue.
 
 ## License
 
-WuKongClient is licensed under the MIT License.
+MIT License — Copyright (c) 2026 WKImods. See [LICENSE](LICENSE).
 
-Copyright (c) 2026 WKImods.
-
-## Developer
-
-**WKImods**
-
-Independent Mod Development & Software Engineering.
-
-**Built with passion. Driven by curiosity.**
+**WKImods** — Independent Mod Development & Software Engineering.
 
 WuKongClient is an independent project and is not affiliated with Mojang Studios or Microsoft.

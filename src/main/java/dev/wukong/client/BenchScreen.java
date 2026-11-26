@@ -1,125 +1,111 @@
 package dev.wukong.client;
 
+import java.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
 import net.minecraft.network.chat.Component;
 
-/** Compact WuKong home dashboard. Detailed aim controls belong to CombatScreen. */
+/** Responsive module browser: grouped masters, individual toggles, config and favorites. */
 public final class BenchScreen extends Screen {
-    private final BenchConfig cfg = BenchConfig.INSTANCE;
-    private int x, y, w, h, leftW, rightX, rightW;
-    private static final int CYAN = 0xFF5BDCE7;
-    private static final int AMBER = 0xFFFFBE64;
-    private static final int GREEN = 0xFF77DE9D;
-    private static final int VIOLET = 0xFFC1A2FF;
-
-    public BenchScreen() { super(Component.literal("WuKong")); }
-
-    @Override protected void init() {
-        w = Math.min(624, width - 20);
-        h = 394;
-        x = (width - w) / 2;
-        y = Math.max(6, (height - h) / 2);
-        int gap = 18;
-        leftW = (w - 38 - gap) / 2;
-        rightW = w - 38 - gap - leftW;
-        rightX = x + 19 + leftW + gap;
-        int l = x + 16;
-        int top = y + 100;
-
-        page(l, top, leftW, "ESP Dashboard", () -> new EspScreen());
-        page(l, top + 29, leftW, "Entity ESP", () -> new EntityEspScreen());
-        page(l, top + 58, leftW, "Ore / Block Finder", () -> new OreScreen());
-        page(l, top + 87, leftW, "World ESP / Storage", () -> new WorldEspScreen());
-        page(l, top + 116, leftW, "HUD / Utilities", () -> new ModulesScreen(1));
-        page(l, top + 145, leftW, "Survival Automation", () -> new SurvivalScreen());
-        page(l, top + 174, leftW, "Combat / Aim", CombatScreen::new);
-        page(l, top + 203, leftW, "Server Profiles", ServerProfileScreen::new);
-
-        quick(rightX, top, "ESP Master", () -> cfg.espEnabled, v -> cfg.espEnabled = v);
-        quick(rightX, top + 29, "Ore Finder", () -> cfg.oreFinderEnabled, v -> cfg.oreFinderEnabled = v);
-        quick(rightX, top + 58, "Fullbright", () -> cfg.fullbrightEnabled, v -> cfg.fullbrightEnabled = v);
-        quick(rightX, top + 87, "Aim Assist", () -> cfg.aimAssist, v -> cfg.aimAssist = v);
-        quick(rightX, top + 116, "AutoTool", () -> cfg.autoToolEnabled, v -> cfg.autoToolEnabled = v);
-        quick(rightX, top + 145, "Auto Eat", () -> cfg.autoEatEnabled, v -> cfg.autoEatEnabled = v);
-        page(rightX, top + 174, rightW, "Keybinds", () ->
-                new KeyBindsScreen(this, Minecraft.getInstance().options));
-
-        // Dedicated help entry centered in the footer, never over the module controls.
-        addRenderableWidget(Button.builder(Component.literal(WuKongLanguage.text("?  Extras / Hilfe  >", "?  Extras / Help  >")), b -> {
-            cfg.save(); Minecraft.getInstance().gui.setScreen(new ExtrasScreen());
-        }).bounds(x + (w - 152) / 2, y + h - 32, 152, 22).build());
+    private final Set<String> expanded=new HashSet<>();
+    private final boolean quick;
+    private boolean favorites;
+    private String query="";
+    private int page,x,w,top,bottom;
+    private List<Row> data=List.of();
+    private RowButtons[] widgets;
+    private Button prev,next,filter;
+    private EditBox search;
+    private record Row(ModuleCatalog.Group group,ModuleCatalog.Module module){}
+    private record RowButtons(Button name,Button toggle,Button config,Button star){}
+    public BenchScreen(){this(false);}
+    public BenchScreen(boolean quick){super(Component.literal(quick?"WuKong Quick Menu":"WuKongClient 6.0"));this.quick=quick;favorites=quick;}
+    private static String tr(String de,String en){return ModuleCatalog.tr(de,en);}
+    private void open(Screen s){BenchConfig.INSTANCE.save();Minecraft.getInstance().gui.setScreen(s);}
+    private Button button(String text,int x,int y,int w,int h,Button.OnPress action){return addRenderableWidget(Button.builder(Component.literal(text),action).bounds(x,y,Math.max(1,w),h).build());}
+    @Override protected void init(){
+        w=Math.min(550,width-12);x=(width-w)/2;top=59;bottom=Math.max(top+24,height-32);
+        int side=Math.min(92,(w-12)/4);
+        search=addRenderableWidget(new EditBox(font,x+4,32,w-2*side-16,20,Component.literal(tr("Module suchen","Search modules"))));
+        search.setMaxLength(80);search.setValue(query);search.setHint(Component.literal(tr("Module suchen...","Search modules...")));
+        filter=button(favorites?tr("Favoriten","Favorites"):tr("Alle","All"),x+w-2*side-8,32,side,20,b->{favorites=!favorites;page=0;refresh();});
+        button(tr("Client","Client"),x+w-side-4,32,side,20,b->open(new EvolutionSettingsScreen(this)));
+        int count=Math.max(1,(bottom-top)/23);widgets=new RowButtons[count];
+        int starW=24,cfgW=Math.min(72,w/5),toggleW=Math.min(82,Math.max(55,w/4)),nameW=w-starW-cfgW-toggleW-18;
+        for(int i=0;i<count;i++){
+            final int n=i;int y=top+i*23;
+            Button a=button("",x+4,y,nameW,20,b->action(n,0));
+            Button t=button("",x+8+nameW,y,toggleW,20,b->action(n,1));
+            Button c=button("Config",x+12+nameW+toggleW,y,cfgW,20,b->action(n,2));
+            Button f=button("*",x+w-starW-4,y,starW,20,b->action(n,3));
+            widgets[i]=new RowButtons(a,t,c,f);
+        }
+        int fy=height-25, unit=(w-16)/5;
+        prev=button("<",x+4,fy,unit,20,b->{page--;refresh();});
+        next=button(">",x+8+unit,fy,unit,20,b->{page++;refresh();});
+        button(tr("Profile","Profiles"),x+12+2*unit,fy,unit,20,b->open(new ServerProfileScreen()));
+        button(quick?tr("Alle","All"):tr("Schnell","Quick"),x+16+3*unit,fy,unit-2,20,b->open(new BenchScreen(!quick)));
+        button(tr("Zur\u00FCck","Back"),x+w-unit-4,fy,unit,20,b->onClose());
+        search.setResponder(s->{query=s;page=0;refresh();});refresh();
     }
-
-    private static String tr(String label) {
-        if (!WuKongLanguage.german()) return label;
-        return switch (label) {
-            case "ESP Dashboard" -> "ESP-Uebersicht";
-            case "Entity ESP" -> "Entitaeten ESP";
-            case "Ore / Block Finder" -> "Erz- / Blockfinder";
-            case "World ESP / Storage" -> "Welt ESP / Lager";
-            case "HUD / Utilities" -> "HUD / Werkzeuge";
-            case "Survival Automation" -> "Survival-Automatik";
-            case "Combat / Aim" -> "Kampf / Zielen";
-            case "Server Profiles" -> "Serverprofile";
-            case "Keybinds" -> "Tastenbelegung";
-            case "ESP Master" -> "Gesamt-ESP";
-            case "Ore Finder" -> "Erzfinder";
-            case "Aim Assist" -> "Zielhilfe";
-            case "Auto Eat" -> "Auto-Essen";
-            default -> label;
-        };
+    private boolean matches(ModuleCatalog.Group g,ModuleCatalog.Module m,String q){return q.isBlank()||(g.en()+" "+g.de()+" "+m.en()+" "+m.de()+" "+m.id()).toLowerCase(Locale.ROOT).contains(q);}
+    private void refresh(){
+        var list=new ArrayList<Row>();String q=query.trim().toLowerCase(Locale.ROOT);
+        for(var g:ModuleCatalog.GROUPS){
+            var children=ModuleCatalog.MODULES.stream().filter(m->m.group().equals(g.id())&&(!favorites||EvolutionUi.favorite(m.id()))&&matches(g,m,q)).toList();
+            if(children.isEmpty()&&(favorites||!q.isBlank()))continue;
+            list.add(new Row(g,null));
+            if(favorites||!q.isBlank()||expanded.contains(g.id()))for(var m:children)list.add(new Row(g,m));
+        }
+        data=List.copyOf(list);page=Math.max(0,Math.min(page,Math.max(0,(data.size()-1)/widgets.length)));
+        filter.setMessage(Component.literal(favorites?tr("Favoriten","Favorites"):tr("Alle","All")));
+        for(int i=0;i<widgets.length;i++){
+            var b=widgets[i];int k=page*widgets.length+i;boolean present=k<data.size();
+            b.name.visible=b.toggle.visible=b.config.visible=b.star.visible=present;
+            if(!present)continue;
+            var row=data.get(k);var g=row.group();var m=row.module();
+            if(m==null){
+                String name=(expanded.contains(g.id())||favorites||!q.isBlank()?"- ":"+ ")+g.name();
+                b.name.setMessage(Component.literal(font.plainSubstrByWidth(name,b.name.getWidth()-8)));
+                b.name.setTooltip(Tooltip.create(Component.literal(g.name())));
+                b.toggle.setMessage(Component.literal((b.toggle.getWidth()>=68?"MASTER ":"M: ")+(g.on().getAsBoolean()?"ON":"OFF")));
+                b.toggle.setTooltip(Tooltip.create(Component.literal(tr("Master pausiert alle Module.","Master pauses all child modules."))));
+                b.config.visible=g.advanced()!=null;b.config.active=g.advanced()!=null;b.star.visible=false;
+            }else{
+                b.name.setMessage(Component.literal(font.plainSubstrByWidth("  "+m.name(),b.name.getWidth()-8)));
+                b.name.setTooltip(Tooltip.create(Component.literal(m.description())));
+                b.toggle.setMessage(Component.literal(ModuleCatalog.state(m)));
+                b.toggle.setTooltip(Tooltip.create(Component.literal(tr("Modul umschalten","Toggle module"))));
+                b.config.active=true;b.star.visible=true;b.star.active=true;
+                b.star.setMessage(Component.literal(EvolutionUi.favorite(m.id())?"\u2605":"\u2606"));
+                b.star.setTooltip(Tooltip.create(Component.literal(tr("Favorit umschalten","Toggle favorite"))));
+            }
+        }
+        prev.active=page>0;next.active=(page+1)*widgets.length<data.size();
     }
-
-    private interface Flag { boolean get(); }
-    private interface Toggle { void set(boolean on); }
-
-    private void page(int xx, int yy, int ww, String label, java.util.function.Supplier<Screen> screen) {
-        addRenderableWidget(Button.builder(Component.literal(tr(label) + "  >"), b -> {
-            cfg.save(); Minecraft.getInstance().gui.setScreen(screen.get());
-        }).bounds(xx, yy, ww, 21).build());
+    private void action(int i,int kind){
+        int k=page*widgets.length+i;if(k>=data.size())return;var row=data.get(k);var m=row.module();var g=row.group();
+        if(m==null){
+            if(kind==0){if(!expanded.remove(g.id()))expanded.add(g.id());}
+            if(kind==1)ModuleCatalog.toggle(g);
+            if(kind==2&&g.advanced()!=null){open(g.advanced().get());return;}
+        }else{
+            if(kind==0||kind==2){open(new ModuleConfigScreen(this,m));return;}
+            if(kind==1)ModuleCatalog.toggle(m);
+            if(kind==3)EvolutionUi.toggleFavorite(m.id());
+        }refresh();
     }
-
-    private void quick(int xx, int yy, String label, Flag get, Toggle set) {
-        addRenderableWidget(Button.builder(Component.literal(tr(label) + " : " + (get.get() ? "ON" : "OFF")), b -> {
-            set.set(!get.get());
-            cfg.save();
-            b.setMessage(Component.literal(tr(label) + " : " + (get.get() ? "ON" : "OFF")));
-        }).bounds(xx, yy, rightW, 21).build());
+    @Override public boolean mouseScrolled(double mx,double my,double sx,double sy){if(my>=top&&my<bottom&&sy!=0){page+=sy>0?-1:1;refresh();return true;}return super.mouseScrolled(mx,my,sx,sy);}
+    @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float p){
+        g.fill(x,4,x+w,height-3,EvolutionUi.panel());g.fill(x,4,x+w,6,EvolutionUi.accent());
+        g.text(font,quick?"WUKONG / QUICK MENU":"WUKONGCLIENT / 6.0 BETA",x+6,10,EvolutionUi.accent(),true);
+        String active=font.plainSubstrByWidth(ServerProfiles.activeLabel(),w-12);g.text(font,active,x+6,20,0xFFB7C7D2,false);
+        if(data.isEmpty())g.text(font,tr("Keine Module gefunden.","No matching modules."),x+8,top+4,0xFFB7C7D2,true);
+        String pText=(page+1)+" / "+Math.max(1,(data.size()+widgets.length-1)/widgets.length);
+        g.text(font,pText,x+6,height-36,0xFFB7C7D2,true);super.extractRenderState(g,mx,my,p);
     }
-
-    private void status(GuiGraphicsExtractor g, int xx, int chipWidth, String label, boolean on, int accent) {
-        g.fill(xx, y + 39, xx + chipWidth, y + 64, on ? 0xFF203E39 : 0xFF262D35);
-        g.fill(xx, y + 39, xx + 3, y + 64, accent);
-        g.text(font, label + " " + (on ? "ON" : "OFF"), xx + 9, y + 47,
-                on ? 0xFFEDF7F8 : 0xFFABB3BF, false);
-    }
-
-    @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float partial) {
-        g.fill(x, y, x + w, y + h, 0xEF101924);
-        g.fill(x, y, x + w, y + 32, 0xFF1F3342);
-        g.fill(x, y + 30, x + w, y + 32, CYAN);
-        g.text(font, WuKongLanguage.text("WUKONG / KONTROLLZENTRUM", "WUKONG / CONTROL CENTER"), x + 16, y + 12, 0xFFFFFFFF, false);
-        g.fill(x + 10, y + 72, x + w - 10, y + 74, 0xFF314253);
-        int chipW = (w - 38 - 3 * 6) / 4;
-        status(g, x + 16, chipW, "ESP", cfg.espEnabled, CYAN);
-        status(g, x + 22 + chipW, chipW, "ORE", cfg.oreFinderEnabled, CYAN);
-        status(g, x + 28 + 2 * chipW, chipW, "AIM", cfg.aimAssist, AMBER);
-        status(g, x + 34 + 3 * chipW, chipW, "LIGHT", cfg.fullbrightEnabled, GREEN);
-        g.fill(x + 10, y + 82, x + w - 10, y + h - 43, 0x99141F2C);
-        g.fill(x + 13, y + 91, x + 16, y + h - 55, CYAN);
-        g.fill(rightX - 5, y + 91, rightX - 2, y + h - 55, GREEN);
-        g.text(font, "MODULES", x + 24, y + 85, CYAN, false);
-        g.text(font, WuKongLanguage.text("SCHNELLSCHALTER", "QUICK SWITCHES"), rightX + 7, y + 85, GREEN, false);
-        super.extractRenderState(g, mx, my, partial);
-        g.fill(x + 12, y + h - 37, x + w - 12, y + h - 36, 0xFF314253);
-        g.text(font, "WUKONG", x + 16, y + h - 24, VIOLET, false);
-        g.text(font, "ESC", x + w - 40, y + h - 24, 0xFFA4BDC9, false);
-    }
-
-    @Override public void onClose() { cfg.save(); super.onClose(); }
-    @Override public boolean isPauseScreen() { return false; }
+    @Override public void onClose(){BenchConfig.INSTANCE.save();if(quick)open(new BenchScreen());else super.onClose();}
+    @Override public boolean isPauseScreen(){return false;}
 }

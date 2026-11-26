@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "id": "wukong",
   "version": "${version}",
-  "name": "WuKong",
+  "name": "WuKongClient",
   "description": "WuKong client tools for Minecraft 26.3 (Fabric).",
   "authors": [
-    "WuKong"
+    "WKImods"
   ],
-  "license": "All-Rights-Reserved",
+  "license": "MIT",
   "environment": "client",
   "entrypoints": {
     "client": [

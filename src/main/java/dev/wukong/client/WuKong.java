@@ -11,5 +11,7 @@ public final class WuKong implements ClientModInitializer {
         WuKongKeys.initialize();
         ServerProfiles.install();
         ClientHooks.install();
+        SmartInventory.install();
+        EvolutionUi.install();
     }
 }

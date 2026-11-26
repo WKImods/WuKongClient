@@ -48,6 +48,10 @@ public final class WuKongKeys {
     public static final KeyMapping TOOL_SAVER = ctrlKey("tool_saver", InputConstants.KEY_NUMPAD8);
     public static final KeyMapping AUTO_REFILL = ctrlKey("auto_refill", InputConstants.KEY_NUMPAD9);
     public static final KeyMapping AUTO_EAT = ctrlKey("auto_eat", InputConstants.KEY_NUMPAD0);
+    public static final KeyMapping SORT_INVENTORY = unbound("sort_inventory");
+    public static final KeyMapping AUTO_FISH = unbound("auto_fish");
+    public static final KeyMapping ZOOM=registerKey("zoom",InputConstants.KEY_C);
+    public static final KeyMapping QUICK_MENU=unbound("quick_menu");
     // Each ore type can also have its own independent hotkey.
     public static final java.util.Map<OreKind, KeyMapping> ORE_TYPES = registerOreTypes();
 

@@ -49,7 +49,7 @@ public final class ServerProfiles {
     }
 
     public static String activeLabel() {
-        return active == null ? "Global (Hauptmenü)" : active.label();
+        return active == null ? "Global (Hauptmen\u00FC)" : active.label();
     }
 
     public static String activeFileLabel() {
@@ -107,6 +107,7 @@ public final class ServerProfiles {
         if (Objects.equals(active == null ? null : active.key(), next == null ? null : next.key())) return;
         // Save the old server before redirecting BenchConfig.save() to another file.
         if (active != null) BenchConfig.INSTANCE.save();
+        else defaultSettings = snapshot();
         if (next == null) {
             active = null;
             apply(defaultSettings);
@@ -118,11 +119,11 @@ public final class ServerProfiles {
             JsonObject settings;
             boolean firstUse = !Files.exists(destination);
             if (firstUse) {
-                settings = freshProfile();
+                settings = next.key().startsWith("server|") ? conservativeProfile() : freshProfile();
                 // Preserve existing waypoints exactly once when upgrading from
                 // the old global file. Other servers start with empty waypoints.
                 Path marker = profilesFolder().resolve(".legacy-waypoints-imported");
-                boolean importLegacy = !Files.exists(marker) && hasLegacyWaypoints();
+                boolean importLegacy = next.key().startsWith("world|") && !Files.exists(marker) && hasLegacyWaypoints();
                 if (importLegacy) {
                     settings.add("waypoints", defaultSettings.get("waypoints").deepCopy());
                 }
@@ -140,14 +141,33 @@ public final class ServerProfiles {
             System.out.println("[WuKong] Active profile: " + next.label() + " (" + next.filename() + ")");
         } catch (Exception e) {
             // Do not overwrite an unreadable profile. Preserve its contents.
-            active = null;
-            apply(defaultSettings);
-            System.err.println("[WuKong] Unable to load profile; original file left unchanged: " + e);
+            active = next;
+            ConfigRecovery.preserve(profilesFolder().resolve(next.filename()),e);
+            apply(freshProfile());
+            System.err.println("[WuKong] Unable to load profile; safe defaults loaded: " + e);
         }
     }
 
+    static JsonObject snapshot() { return JSON.toJsonTree(BenchConfig.INSTANCE).getAsJsonObject(); }
+    static JsonObject conservativeProfile() {
+        JsonObject copy = freshProfile();
+        for (String field : new String[]{"espEnabled", "localGlow", "oreFinderEnabled", "aimAssist", "aimTillDeath", "aimHitTillDeath", "aimTriggerBow", "autoToolEnabled", "autoRefillEnabled", "autoEatEnabled", "autoFishEnabled", "inventorySorterEnabled", "fullbrightEnabled", "enhancedNametags", "itemEspEnabled", "spawnerEspEnabled", "steadyBowView", "separateBowCamera"}) copy.addProperty(field, false);
+        return copy;
+    }
+    static void applyTemplate(JsonObject template) {
+        JsonObject old = snapshot();
+        JsonObject merged = conservativeProfile();
+        template=template.deepCopy(); BenchConfig.migrateMasters(template);
+        for (var entry : template.entrySet()) merged.add(entry.getKey(), entry.getValue().deepCopy());
+        merged.addProperty("appliedProfileName", "");
+        merged.add("waypoints", old.get("waypoints"));
+        merged.add("lastDeath", old.get("lastDeath"));
+        apply(merged);
+        BenchConfig.INSTANCE.save();
+        if (active == null) defaultSettings = snapshot();
+    }
     private static JsonObject freshProfile() {
-        JsonObject copy = defaultSettings.deepCopy();
+        JsonObject copy = JSON.toJsonTree(new BenchConfig()).getAsJsonObject();
         copy.add("waypoints", JSON.toJsonTree(new ArrayList<BenchConfig.Waypoint>()));
         copy.add("lastDeath", com.google.gson.JsonNull.INSTANCE);
         return copy;
@@ -161,6 +181,7 @@ public final class ServerProfiles {
     private static JsonObject readExisting(Path source) throws Exception {
         JsonElement parsed = JsonParser.parseString(Files.readString(source));
         if (!parsed.isJsonObject()) throw new IllegalArgumentException("Profile root must be a JSON object: " + source);
+        BenchConfig.migrateMasters(parsed.getAsJsonObject());
         JsonObject merged = freshProfile();
         // Old profiles may be missing fields added by future WuKong versions.
         for (var entry : parsed.getAsJsonObject().entrySet()) {
