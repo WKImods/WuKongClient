@@ -1,11 +1,8 @@
 package dev.wukong.client;
 
-import java.util.Comparator;
-import java.util.ArrayList;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
@@ -27,6 +24,7 @@ public final class SmartInventory {
         var cfg=BenchConfig.INSTANCE;
         while(WuKongKeys.SORT_INVENTORY.consumeClick()) if(!WuKongKeys.SORT_INVENTORY.isUnbound() && (mc.gui.screen()==null || mc.gui.screen() instanceof InventoryScreen)) sort(mc);
         while(WuKongKeys.AUTO_FISH.consumeClick()) if(!WuKongKeys.AUTO_FISH.isUnbound() && local(mc) && mc.gui.screen()==null){cfg.autoFishEnabled=!cfg.autoFishEnabled;cfg.save();reset();}
+        InventorySortAdapter.tick(mc);
         if(world!=mc.level || owner!=mc.player){world=mc.level;owner=mc.player;reset();cooldown=0;}
         if(cooldown>0)cooldown--;
         if(!local(mc) || !cfg.inventoryMasterEnabled || !cfg.autoFishEnabled || mc.gui.screen()!=null || mc.isPaused() || mc.options.keyAttack.isDown() || mc.options.keyUse.isDown() || mc.player.isUsingItem()){reset();return;}
@@ -44,16 +42,14 @@ public final class SmartInventory {
             rodSlot=inv.getSelectedSlot();rod=held.copy();mc.gameMode.useItem(mc.player,InteractionHand.MAIN_HAND);recast=12;cooldown=20;
         }
     }
-    private static final Comparator<ItemStack> ORDER=Comparator.comparing(ItemStack::isEmpty)
-        .thenComparing(s->s.isEmpty()?"":BuiltInRegistries.ITEM.getKey(s.getItem()).toString())
-        .thenComparing(s->s.isEmpty()?"":s.getHoverName().getString())
-        .thenComparingInt(s->-s.getCount());
     public static void sort(Minecraft mc){
-        if(!local(mc) || !BenchConfig.INSTANCE.inventoryMasterEnabled || !BenchConfig.INSTANCE.inventorySorterEnabled)return;
+        if(mc.player==null || mc.level==null || mc.gameMode==null || !mc.player.isAlive() || !BenchConfig.INSTANCE.inventoryMasterEnabled || !BenchConfig.INSTANCE.inventorySorterEnabled)return;
+        if(!mc.hasSingleplayerServer()){InventorySortAdapter.start(mc);return;}
         var p=mc.player;
         var server=mc.getSingleplayerServer();
         if(server==null || p.hasInfiniteMaterials() || p.containerMenu!=p.inventoryMenu || !p.inventoryMenu.getCarried().isEmpty())return;
         final var playerId=p.getUUID();
+        final var cfg=BenchConfig.INSTANCE;final int locked=cfg.inventorySortLocked;final String order=cfg.inventorySortOrder;final boolean merge=cfg.inventorySortMerge;
         final var success=Component.literal(tr("Inventar sortiert.","Inventory sorted."));
         final var rejected=Component.literal(tr("Sortierung gestoppt: Inventar nicht bereit.","Sorting stopped: inventory not ready."));
         // The integrated server owns the inventory. Never mutate the client copy.
@@ -65,12 +61,11 @@ public final class SmartInventory {
                 player.sendSystemMessage(rejected);return;
             }
             var inventory=player.getInventory();
-            var ordered=new ArrayList<ItemStack>(27);
-            for(int i=9;i<36;i++)ordered.add(inventory.getItem(i));
-            ordered.sort(ORDER);
-            // Preserve each stack and its components, including empty slots.
-            // No buffer, merging, dropping or changes outside the main inventory.
-            for(int i=9;i<36;i++)inventory.setItem(i,ordered.get(i-9));
+            try {
+                var model=InventorySortAdapter.build(inventory::getItem,locked,order,merge);
+                var result=model.plan().result();
+                for(int i=0;i<27;i++)if((locked&(1<<i))==0)inventory.setItem(i+9,model.stack(result.slots().get(i)));
+            } catch (RuntimeException e){player.sendSystemMessage(rejected);return;}
             inventory.setChanged();
             menu.broadcastFullState();
             player.sendSystemMessage(success);

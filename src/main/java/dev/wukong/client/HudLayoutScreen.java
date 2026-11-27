@@ -13,7 +13,7 @@ final class HudLayoutScreen extends Screen {
     private int canvasH,renderW,renderH; private Button choose; private Control[] controls;
     HudLayoutScreen(){this(0);}
     HudLayoutScreen(int initial){this(initial,null);}
-    HudLayoutScreen(int initial,Screen parent){super(Component.literal("HUD Editor 6.0"));this.parent=parent;selected=Math.max(0,Math.min(3,initial));}
+    HudLayoutScreen(int initial,Screen parent){super(Component.literal(UiLabels.t("HUD Editor 6.0")));this.parent=parent;selected=Math.max(0,Math.min(3,initial));}
     private String tr(String de,String en){return HudStudioScreen.tr(de,en);}
     @Override protected void init(){
         canvasH=Math.max(1,height-108);renderW=width;renderH=canvasH;drag=-1;
@@ -38,7 +38,7 @@ final class HudLayoutScreen extends Screen {
         renderW=width;renderH=canvasH;g.fill(0,0,width,height,0x88000000);var mc=Minecraft.getInstance();
         for(int i=0;i<4;i++)if(i!=selected)HudStudio.drawOne(g,mc,i,true,renderW,renderH);HudStudio.drawOne(g,mc,selected,true,renderW,renderH);
         var b=bounds(selected);g.fill(b.x(),b.y(),b.x()+b.w(),b.y()+1,0xFF5BDCE7);g.fill(b.x(),b.y()+b.h()-1,b.x()+b.w(),b.y()+b.h(),0xFF5BDCE7);
-        g.fill(0,canvasH,width,height,0xFF17232E);g.text(font,"HUD Editor 6.0 | "+HudStudio.name(selected),5,canvasH+4,0xFF5BDCE7,true);super.extractRenderState(g,mx,my,partial);
+        g.fill(0,canvasH,width,height,0xFF17232E);g.text(font,UiLabels.t("HUD Editor 6.0 | ")+HudStudio.name(selected),5,canvasH+4,0xFF5BDCE7,true);super.extractRenderState(g,mx,my,partial);
     }
     @Override public boolean mouseClicked(MouseButtonEvent e,boolean dbl){if(super.mouseClicked(e,dbl))return true;if(e.y()>=canvasH)return false;if(e.button()!=1)return false;int i=hit(e.x(),e.y());if(i<0)return false;setFocused(null);selected=drag=i;var b=bounds(i);offsetX=e.x()-b.x();offsetY=e.y()-b.y();setDragging(true);sync();return true;}
     @Override public boolean mouseDragged(MouseButtonEvent e,double dx,double dy){if(drag<0)return super.mouseDragged(e,dx,dy);var b=bounds(drag);HudStudio.position(drag,(int)Math.round((e.x()-offsetX)*1000/Math.max(1,renderW-b.w())),(int)Math.round((e.y()-offsetY)*1000/Math.max(1,renderH-b.h())));sync();return true;}

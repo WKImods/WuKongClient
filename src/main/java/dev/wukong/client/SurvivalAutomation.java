@@ -69,13 +69,13 @@ public final class SurvivalAutomation {
         else rememberHotbar(mc);
         previousUseSlot=(mc.options.keyUse.isDown() || mc.player.isUsingItem()) && !mc.options.keyDrop.isDown()
                 ? mc.player.getInventory().getSelectedSlot() : -1;
-        if (autoEating) { /* Auto Eat owns the selected hotbar slot. */ }
+        if (autoEating || RemoteMining.ownsHotbar()) { /* Another active operation owns the hotbar. */ }
         else if (cfg.autoToolEnabled && mc.options.keyAttack.isDown()) chooseTool(mc);
         else restoreAfterMining(mc);
-        if (cfg.toolSaverEnabled) protectSelectedTool(mc);
+        if (cfg.toolSaverEnabled && !RemoteMining.ownsHotbar()) protectSelectedTool(mc);
         if (cfg.autoEatBackground) {
             if (autoEating) finishEating(mc, true);
-        } else handleAutoEat(mc);
+        } else if (!RemoteMining.ownsHotbar()) handleAutoEat(mc);
     }
 
     private static boolean protectedTool(ItemStack stack) {
@@ -118,6 +118,11 @@ public final class SurvivalAutomation {
         }
     }
 
+    static boolean prepareRemoteMining(Minecraft mc) {
+        if (autoEating) return false;
+        restoreAfterMining(mc);
+        return true;
+    }
     private static void restoreAfterMining(Minecraft mc) {
         if (toolPreviousSlot>=0 && mc.player.getInventory().getSelectedSlot()==toolSelectedSlot) {
             mc.player.getInventory().setSelectedSlot(toolPreviousSlot);

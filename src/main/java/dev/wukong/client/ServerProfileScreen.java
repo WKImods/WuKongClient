@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 public final class ServerProfileScreen extends Screen {
     private int x,w,page; private List<String> names=List.of();private String selected="",status="",confirm="";
     private EditBox name;private Button[] rows;private Button prev,next;private int listTop=42;
-    public ServerProfileScreen(){super(Component.literal("WuKong - Profile Manager+"));}
+    public ServerProfileScreen(){super(Component.literal(UiLabels.t("WuKong - Profile Manager+")));}
     private String tr(String de,String en){return WuKongLanguage.text(de,en);}
     private interface Task {void run() throws Exception;}
     private String selected(){if(!names.contains(selected))throw new IllegalStateException(tr("Profil ausw\u00E4hlen","Select a profile"));return selected;}

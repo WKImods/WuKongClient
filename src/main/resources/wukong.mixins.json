@@ -12,7 +12,8 @@
     "EnchantmentTooltipMixin",
     "MerchantTradeTooltipMixin",
     "ZoomCameraMixin",
-    "ZoomMouseMixin"
+    "ZoomMouseMixin",
+    "RemoteMiningMixin"
   ],
   "injectors": {
     "defaultRequire": 1

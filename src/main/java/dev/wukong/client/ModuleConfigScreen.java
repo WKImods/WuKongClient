@@ -26,12 +26,23 @@ final class ModuleConfigScreen extends Screen {
         @Override protected void updateMessage(){setMessage(Component.literal(label+": "+get.getAsInt()));}
         @Override protected void applyValue(){set.accept(min+(int)Math.round(value*(max-min)));c.save();}
     }));}
+    private void blockIds(String label,Supplier<String> get,Consumer<String> set){controls.add(y->{
+        int labelW=Math.min(115,(w-16)/3);
+        button(label,x+8,y,labelW,b->{}).active=false;
+        EditBox field=addRenderableWidget(new EditBox(font,x+12+labelW,y,w-20-labelW,20,Component.literal(label)));
+        field.setMaxLength(512);field.setValue(Objects.toString(get.get(),""));field.setHint(Component.literal("stone,deepslate"));
+        field.setResponder(s->{set.accept(s);c.save();});
+    });}
     private String eatModeLabel(){
         return tr("Modus: ","Mode: ")+(c.autoEatBackground
                 ? tr("Hintergrund (Einzelspieler)","Background (singleplayer)")
                 : tr("Standard (Hotbar)","Standard (hotbar)"));
     }
+    private String miningModeLabel(boolean remote){
+        return tr("Modus: ","Mode: ")+(remote?"Multiplayer":"Singleplayer");
+    }
     private void configOptions(){
+        action(tr("Tastenbelegung","Keybinds"),()->open(new KeyBindsScreen(this,Minecraft.getInstance().options)));
         switch(module.id()){
             case "players","items","spawner" -> action(tr("Darstellung / Reichweite","Style / range"),()->open(new VisualEspScreen()));
             case "mobs" -> action(tr("Mob-Einstellungen","Mob settings"),()->open(new EntityEspScreen()));
@@ -52,23 +63,53 @@ final class ModuleConfigScreen extends Screen {
                 action(eatModeLabel(),()->{c.autoEatBackground=!c.autoEatBackground;c.save();rebuildWidgets();});
                 slider(tr("Hungergrenze","Hunger threshold"),1,19,()->c.autoEatHungerThreshold,v->c.autoEatHungerThreshold=v);
             }
+            case "area_nuker" -> {
+                action(miningModeLabel(c.areaMultiplayer),()->{c.areaMultiplayer=!c.areaMultiplayer;c.save();rebuildWidgets();});
+                slider(tr("Radius","Radius"),1,5,()->c.areaRadius,v->c.areaRadius=v);
+                toggle(tr("Kugel statt W\u00FCrfel","Sphere instead of cube"),()->c.areaSphere,v->c.areaSphere=v);
+                toggle(tr("Nur eine Schicht","Single layer"),()->c.areaLayer,v->c.areaLayer=v);
+                toggle(tr("Boden sch\u00FCtzen (ab Fu\u00DFh\u00F6he)","Protect floor (feet and above)"),()->c.areaProtectFloor,v->c.areaProtectFloor=v);
+                slider(tr("Intervall (Ticks)","Interval (ticks)"),1,40,()->c.areaInterval,v->c.areaInterval=v);
+                slider(tr("Bl\u00F6cke pro Intervall","Blocks per interval"),1,12,()->c.areaBatch,v->c.areaBatch=v);
+                toggle(tr("Nur beim Schleichen","Sneak only"),()->c.areaSneak,v->c.areaSneak=v);
+                toggle(tr("Erze erhalten","Preserve ores"),()->c.areaPreserveOres,v->c.areaPreserveOres=v);
+                blockIds(tr("Nur IDs","Include IDs"),()->c.areaInclude,v->c.areaInclude=v);
+                blockIds(tr("Ausnahmen","Exclude IDs"),()->c.areaExclude,v->c.areaExclude=v);
+            }
+            case "precision_nuker" -> {
+                action(miningModeLabel(c.precisionMultiplayer),()->{c.precisionMultiplayer=!c.precisionMultiplayer;c.save();rebuildWidgets();});
+                slider(tr("Breite","Width"),1,5,()->c.precisionWidth,v->c.precisionWidth=v);
+                slider(tr("H\u00F6he","Height"),1,5,()->c.precisionHeight,v->c.precisionHeight=v);
+                slider(tr("Tiefe","Depth"),1,3,()->c.precisionDepth,v->c.precisionDepth=v);
+                toggle(tr("Vorschau","Preview"),()->c.precisionPreview,v->c.precisionPreview=v);
+                toggle(tr("Nur gleicher Blocktyp","Same block only"),()->c.precisionSameBlock,v->c.precisionSameBlock=v);
+                toggle(tr("Nur beim Schleichen","Sneak only"),()->c.precisionSneak,v->c.precisionSneak=v);
+                toggle(tr("Erze erhalten","Preserve ores"),()->c.precisionPreserveOres,v->c.precisionPreserveOres=v);
+                blockIds(tr("Nur IDs","Include IDs"),()->c.precisionInclude,v->c.precisionInclude=v);
+                blockIds(tr("Ausnahmen","Exclude IDs"),()->c.precisionExclude,v->c.precisionExclude=v);
+            }
             case "enchant" -> toggle(tr("Details nur mit SHIFT","Details only with SHIFT"),()->c.enchantmentInfoShiftOnly,v->c.enchantmentInfoShiftOnly=v);
-            case "sort" -> action(tr("Jetzt sortieren (Einzelspieler)","Sort now (singleplayer)"),()->SmartInventory.sort(Minecraft.getInstance()));
+            case "sort" -> {
+                action(tr("Jetzt sortieren","Sort now"),()->SmartInventory.sort(Minecraft.getInstance()));
+                action(tr("Sortierreihenfolge / Slot-Schutz","Sort order / slot protection"),()->open(new InventorySorterScreen(this)));
+            }
             case "armor" -> action(tr("HUD Layout bearbeiten","Edit HUD layout"),()->open(new HudLayoutScreen(0,this)));
             case "potion" -> action(tr("HUD Layout bearbeiten","Edit HUD layout"),()->open(new HudLayoutScreen(1,this)));
             case "performance" -> action(tr("HUD Layout bearbeiten","Edit HUD layout"),()->open(new HudLayoutScreen(2,this)));
             case "resource" -> {action(tr("HUD Layout bearbeiten","Edit HUD layout"),()->open(new HudLayoutScreen(3,this)));action(tr("Item & Sammelziel","Item & collection goal"),()->open(new ResourceGoalScreen(this)));}
             default -> {}
         }
-        action(tr("Tastenbelegung","Keybinds"),()->open(new KeyBindsScreen(this,Minecraft.getInstance().options)));
         action(tr("Modul zur\u00FCcksetzen","Reset module"),()->open(new ResetModuleScreen(this,module)));
     }
     private void reset(){
         module.set().accept(false);
         switch(module.id()){
             case "zoom" -> {c.zoomStart=4;c.zoomMax=50;c.zoomRemembered=4;c.zoomSmooth=c.zoomAdaptive=c.zoomRemember=false;}
+            case "sort" -> {c.inventorySortOrder="TYPE";c.inventorySortMerge=false;c.inventorySortLocked=0;}
             case "toolsaver" -> c.toolSaverMinDurability=8;
             case "eat" -> {c.autoEatHungerThreshold=14;c.autoEatBackground=false;}
+            case "area_nuker" -> {c.areaMultiplayer=false;c.areaRadius=2;c.areaInterval=8;c.areaBatch=3;c.areaSphere=true;c.areaLayer=false;c.areaProtectFloor=true;c.areaSneak=true;c.areaPreserveOres=true;c.areaInclude="";c.areaExclude="minecraft:obsidian,minecraft:crying_obsidian";}
+            case "precision_nuker" -> {c.precisionMultiplayer=false;c.precisionWidth=3;c.precisionHeight=3;c.precisionDepth=1;c.precisionPreview=true;c.precisionSameBlock=true;c.precisionSneak=false;c.precisionPreserveOres=true;c.precisionInclude="";c.precisionExclude="minecraft:obsidian,minecraft:crying_obsidian";}
             case "enchant" -> c.enchantmentInfoShiftOnly=true;
             case "storage" -> c.storageEspPlus=false;
             case "armor","potion","performance","resource" -> {
@@ -78,12 +119,12 @@ final class ModuleConfigScreen extends Screen {
             }
             default -> {}
         }
-        c.save();EvolutionUi.note(module.name()+" reset");
+        c.save();EvolutionUi.note(module.name()+UiLabels.t(" reset"));
     }
     @Override protected void init(){
         w=Math.min(410,width-12);x=(width-w)/2;controls.clear();
         var group=ModuleCatalog.group(module.group());
-        button("Master: "+(group.on().getAsBoolean()?"ON":"OFF"),x+8,34,(w-20)/2,b->{ModuleCatalog.toggle(group);rebuildWidgets();});
+        button(UiLabels.t("Master: ")+(group.on().getAsBoolean()?UiLabels.t("ON"):UiLabels.t("OFF")),x+8,34,(w-20)/2,b->{ModuleCatalog.toggle(group);rebuildWidgets();});
         button(tr("Modul: ","Module: ")+ModuleCatalog.state(module),x+w/2+2,34,(w-20)/2,b->{ModuleCatalog.toggle(module);rebuildWidgets();});
         configOptions();perPage=Math.max(1,(height-91)/23);page=Math.max(0,Math.min(page,Math.max(0,(controls.size()-1)/perPage)));
         for(int i=0;i<perPage&&page*perPage+i<controls.size();i++)controls.get(page*perPage+i).accept(59+i*23);
@@ -102,7 +143,7 @@ final class ModuleConfigScreen extends Screen {
     @Override public void onClose(){open(parent);}
     private static final class ResetModuleScreen extends Screen{
         private final ModuleConfigScreen parent;private final ModuleCatalog.Module module;
-        ResetModuleScreen(ModuleConfigScreen parent,ModuleCatalog.Module m){super(Component.literal("Reset module"));this.parent=parent;module=m;}
+        ResetModuleScreen(ModuleConfigScreen parent,ModuleCatalog.Module m){super(Component.literal(UiLabels.t("Reset module")));this.parent=parent;module=m;}
         @Override protected void init(){int w=Math.min(width-16,280),x=(width-w)/2,y=height/2;
             addRenderableWidget(Button.builder(Component.literal(tr("Zur\u00FCcksetzen","Reset")),b->{parent.reset();onClose();}).bounds(x,y,w/2-2,20).build());
             addRenderableWidget(Button.builder(Component.literal(tr("Abbrechen","Cancel")),b->onClose()).bounds(x+w/2+2,y,w/2-2,20).build());}

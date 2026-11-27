@@ -18,6 +18,8 @@ public final class WuKongKeys {
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
             Identifier.fromNamespaceAndPath(WuKong.ID, "controls"));
 
+    public static final KeyMapping RESEARCH_OPEN = unbound("research_open");
+    public static final KeyMapping RESEARCH_MONITOR = unbound("research_monitor");
     public static final KeyMapping MENU = registerKey("menu", InputConstants.KEY_INSERT);
     public static final KeyMapping AIM = registerKey("aim", InputConstants.KEY_R);
     public static final KeyMapping ESP = registerKey("esp", InputConstants.KEY_F7);
@@ -52,6 +54,40 @@ public final class WuKongKeys {
     public static final KeyMapping AUTO_FISH = unbound("auto_fish");
     public static final KeyMapping ZOOM=registerKey("zoom",InputConstants.KEY_C);
     public static final KeyMapping QUICK_MENU=unbound("quick_menu");
+    // 6.1.0-alpha.4: optional new bindings; no existing default is changed.
+    public static final KeyMapping AREA_NUKER = unbound("area_nuker");
+    public static final KeyMapping PRECISION_NUKER = unbound("precision_nuker");
+    public static final KeyMapping WORLD_MINING_MASTER = unbound("world_mining_master");
+    public static final KeyMapping AREA_FLOOR = unbound("area_floor");
+    public static final KeyMapping PRECISION_PREVIEW = unbound("precision_preview");
+    public static final KeyMapping VISUAL_MASTER = unbound("visual_master");
+    public static final KeyMapping SURVIVAL_MASTER = unbound("survival_master");
+    public static final KeyMapping INVENTORY_MASTER = unbound("inventory_master");
+    public static final KeyMapping TOOLTIPS_MASTER = unbound("tooltips_master");
+    public static final KeyMapping HUD_MASTER = unbound("hud_master");
+    public static final KeyMapping COMBAT_MASTER = unbound("combat_master");
+    public static final KeyMapping BOW_PREDICTION = unbound("bow_prediction");
+    public static final KeyMapping BOW_VIEW = unbound("bow_view");
+    public static final KeyMapping STEADY_BOW = unbound("steady_bow");
+    public static final KeyMapping BOW_RELEASE = unbound("bow_release");
+    public static final KeyMapping ZOOM_TOGGLE = unbound("zoom_toggle");
+    public static final KeyMapping SHULKER_PREVIEW = unbound("shulker_preview");
+    public static final KeyMapping BUNDLE_PREVIEW = unbound("bundle_preview");
+    public static final KeyMapping SORT_TOGGLE = unbound("sort_toggle");
+    public static final KeyMapping ENCHANTMENT_INFO = unbound("enchantment_info");
+    public static final KeyMapping TRADE_CALCULATOR = unbound("trade_calculator");
+    public static final KeyMapping ARMOR_HUD = unbound("armor_hud");
+    public static final KeyMapping POTION_HUD = unbound("potion_hud");
+    public static final KeyMapping PERFORMANCE_HUD = unbound("performance_hud");
+    public static final KeyMapping RESOURCE_HUD = unbound("resource_hud");
+    public static final KeyMapping DISTANCE_LABELS = unbound("distance_labels");
+    public static final KeyMapping STORAGE_PLUS = unbound("storage_plus");
+    public static final KeyMapping EAT_BACKGROUND = unbound("eat_background");
+    public static final KeyMapping HUD_EDITOR = unbound("hud_editor");
+    public static final KeyMapping PROFILE_MANAGER = unbound("profile_manager");
+    public static final KeyMapping NOTIFICATIONS = unbound("notifications");
+    public static final KeyMapping THEME_NEXT = unbound("theme_next");
+    public static final KeyMapping UPDATE_CHECK = unbound("update_check");
     // Each ore type can also have its own independent hotkey.
     public static final java.util.Map<OreKind, KeyMapping> ORE_TYPES = registerOreTypes();
 

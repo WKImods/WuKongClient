@@ -30,7 +30,9 @@ public final class QualityHud {
     public static void draw(GuiGraphicsExtractor g) {
         Minecraft mc=Minecraft.getInstance();
         BenchConfig cfg=BenchConfig.INSTANCE;
-        if (mc.player==null || mc.level==null || !cfg.hudMasterEnabled) return;
+        if (mc.player==null || mc.level==null) return;
+        BowDiagnostics.draw(g,mc);
+        if (!cfg.hudMasterEnabled) return;
         HudStudio.draw(g,mc,false);
         if (cfg.inventoryHudEnabled) {
             int bx=8,by=g.guiHeight()-54;

@@ -12,8 +12,8 @@ final class EvolutionSettingsScreen extends Screen {
     private static String tr(String de,String en){return ModuleCatalog.tr(de,en);}
     private void open(Screen s){Minecraft.getInstance().gui.setScreen(s);}
     @Override protected void init(){w=Math.min(400,width-12);x=(width-w)/2;int h=Math.max(14,Math.min(22,(height-57)/7)),y=31;
-        button(tr("Theme","Theme")+": "+EvolutionUi.theme(),y,h,b->{EvolutionUi.nextTheme();b.setMessage(Component.literal("Theme: "+EvolutionUi.theme()));});y+=h;
-        button(tr("Automatische Updatesuche","Automatic update check")+": "+(EvolutionUi.autoCheck()?"ON":"OFF"),y,h,b->{EvolutionUi.toggleAutoCheck();b.setMessage(Component.literal(tr("Automatische Updatesuche","Automatic update check")+": "+(EvolutionUi.autoCheck()?"ON":"OFF")));});y+=h;
+        button(tr("Theme","Theme")+": "+EvolutionUi.theme(),y,h,b->{EvolutionUi.nextTheme();b.setMessage(Component.literal(UiLabels.t("Theme: ")+EvolutionUi.theme()));});y+=h;
+        button(tr("Automatische Updatesuche","Automatic update check")+": "+(EvolutionUi.autoCheck()?UiLabels.t("ON"):UiLabels.t("OFF")),y,h,b->{EvolutionUi.toggleAutoCheck();b.setMessage(Component.literal(tr("Automatische Updatesuche","Automatic update check")+": "+(EvolutionUi.autoCheck()?UiLabels.t("ON"):UiLabels.t("OFF"))));});y+=h;
         button(tr("GitHub-Releases pr\u00FCfen","Check GitHub releases"),y,h,b->EvolutionUi.checkNow());y+=h;
         button(tr("Benachrichtigungen","Notification Center"),y,h,b->open(new NotificationScreen(this)));y+=h;
         button(tr("Tastenbelegung","Keybinds"),y,h,b->open(new KeyBindsScreen(this,Minecraft.getInstance().options)));y+=h;
@@ -23,8 +23,8 @@ final class EvolutionSettingsScreen extends Screen {
     private void button(String text,int y,int h,Button.OnPress click){addRenderableWidget(Button.builder(Component.literal(text),click).bounds(x+8,y,w-16,h-2).build());}
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float p){
         g.fill(x,4,x+w,height-3,EvolutionUi.panel());g.fill(x,4,x+w,6,EvolutionUi.accent());
-        g.text(font,"WUKONG / CLIENT 6.0",x+8,9,EvolutionUi.accent(),true);
-        g.text(font,font.plainSubstrByWidth(EvolutionUi.updateStatus(),w-16),x+8,20,0xFFCDD9E3,false);super.extractRenderState(g,mx,my,p);
+        g.text(font,"WUKONG / CLIENT "+EvolutionUi.installed(),x+8,9,EvolutionUi.accent(),true);
+        g.text(font,font.plainSubstrByWidth(UiLabels.message(EvolutionUi.updateStatus()),w-16),x+8,20,0xFFCDD9E3,false);super.extractRenderState(g,mx,my,p);
     }
     @Override public void onClose(){open(parent);}
     @Override public boolean isPauseScreen(){return false;}

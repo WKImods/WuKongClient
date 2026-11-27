@@ -17,7 +17,7 @@ final class ResourceGoalScreen extends Screen {
     private List<Entry> all=List.of(),filtered=List.of(); private EditBox search,goal; private Button[] rows;
     private Button prev,next; private int page,x,w,top;private Identifier selected;private String error="";
     ResourceGoalScreen(){this(null);}
-    ResourceGoalScreen(Screen parent){super(Component.literal("Resource Tracker"));this.parent=parent;selected=Identifier.tryParse(HudStudio.c.resourceHudItem==null?"minecraft:stone":HudStudio.c.resourceHudItem);}
+    ResourceGoalScreen(Screen parent){super(Component.literal(UiLabels.t("Resource Tracker")));this.parent=parent;selected=Identifier.tryParse(HudStudio.c.resourceHudItem==null?"minecraft:stone":HudStudio.c.resourceHudItem);}
     private String tr(String de,String en){return HudStudioScreen.tr(de,en);}
     @Override protected void init(){
         w=Math.min(340,width-12);x=(width-w)/2;top=8;

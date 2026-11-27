@@ -42,3 +42,5 @@ Desktop.ini
 
 # Patch backups
 *.bak-*
+src-backup-*/
+*.log

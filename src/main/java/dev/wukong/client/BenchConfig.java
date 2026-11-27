@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class BenchConfig {
+    public boolean researchMonitor = false;
     public boolean players = false;
     public boolean hostile = true;
     public boolean passive = true;
@@ -34,6 +35,17 @@ public final class BenchConfig {
     // Category switches are independent of stored child preferences.
     public boolean visualMasterEnabled=false, survivalMasterEnabled=false,
         inventoryMasterEnabled=false, tooltipsMasterEnabled=false, hudMasterEnabled=false;
+    // 6.1 world mining: independent profile-backed options, disabled on fresh install.
+    public boolean worldMiningMaster=false, areaNuker=false, precisionNuker=false;
+    // Explicit per-module engine selection; old profiles default to local mining.
+    public boolean areaMultiplayer=false, precisionMultiplayer=false;
+    public int areaRadius=2, areaInterval=8, areaBatch=3;
+    public boolean areaSphere=true, areaLayer=false, areaSneak=true, areaPreserveOres=true;
+    public boolean areaProtectFloor=true;
+    public String areaInclude="", areaExclude="minecraft:obsidian,minecraft:crying_obsidian";
+    public int precisionWidth=3, precisionHeight=3, precisionDepth=1;
+    public boolean precisionSameBlock=true, precisionSneak=false, precisionPreview=true, precisionPreserveOres=true;
+    public String precisionInclude="", precisionExclude="minecraft:obsidian,minecraft:crying_obsidian";
     public boolean zoomEnabled=false, zoomSmooth=false, zoomAdaptive=false, zoomRemember=false;
     public int zoomStart=4, zoomMax=50;
     public double zoomRemembered=4.0;
@@ -75,6 +87,9 @@ public final class BenchConfig {
     public boolean shulkerPreviewEnabled = false;
     public boolean bundlePreviewEnabled = false;
     public boolean inventorySorterEnabled = false;
+    public String inventorySortOrder = "TYPE";
+    public boolean inventorySortMerge = false;
+    public int inventorySortLocked = 0; // bits 0..26 correspond to main inventory slots 9..35
     public boolean autoFishEnabled = false;
     public boolean enchantmentInfoEnabled = false;
     public boolean enchantmentInfoShiftOnly = true;
@@ -127,10 +142,13 @@ public final class BenchConfig {
     public boolean aimHitTillDeath = false; // Optional melee only; disabled by default
     public double aimFov = 25.0; // angular radius in degrees
     public boolean aimPrediction = false;
+    public boolean bowPredictionDebug = false;
+    public boolean bowPredictionLatency = false;
     public boolean aimTriggerBow = false;
     public int aimBowMinChargeTicks = 20;
     public double aimSmoothing = 0.25; // Legacy setting from Combat Step 1
     public double aimAggression = 0.75; // 0.10 to 1.00 (higher = faster tracking)
+    public String aimResponseProfile = "CUSTOM"; // Stable profile ID
     public int range = 96;
     public boolean steadyBowView = false;
     public boolean separateBowCamera = false;
@@ -158,6 +176,7 @@ public final class BenchConfig {
                     if (!raw.contains("\"storageEspPlus\"")) cfg.storageEspPlus = false;
                     if (!raw.contains("\"toolSaverMinDurability\"")) cfg.toolSaverMinDurability = 8;
                     if (!raw.contains("\"autoEatHungerThreshold\"")) cfg.autoEatHungerThreshold = 14;
+                    if (!data.has("areaProtectFloor")) cfg.areaProtectFloor = true;
                     cfg.toolSaverMinDurability = Math.max(1, Math.min(100, cfg.toolSaverMinDurability));
                     cfg.autoEatHungerThreshold = Math.max(1, Math.min(19, cfg.autoEatHungerThreshold));
                     if (cfg.oreTypes == null) cfg.oreTypes = defaultOreTypes();
@@ -207,13 +226,14 @@ public final class BenchConfig {
                     cfg.range = Math.max(16, Math.min(128, cfg.range));
                     if (cfg.aimAggression <= 0) cfg.aimAggression = 0.75;
                     cfg.aimAggression = Math.max(0.10, Math.min(1.0, cfg.aimAggression));
+                    cfg.aimResponseProfile = dev.wukong.client.combat.AimResponse.fromId(cfg.aimResponseProfile).name();
                     if (!"TOGGLE".equals(cfg.aimActivationMode)) cfg.aimActivationMode = "HOLD";
                     if (cfg.aimType == null || !java.util.Set.of("STANDARD", "PRECISION", "FOCUS", "MELEE").contains(cfg.aimType)) cfg.aimType = "STANDARD";
                     cfg.aimTargetPriority = TargetRules.normalize(cfg.aimTargetPriority);
                     if (cfg.aimRange <= 0) cfg.aimRange = 32; // Older saved configs can omit this field.
                     cfg.aimRange = Math.max(4, Math.min(128, cfg.aimRange));
                     if (cfg.aimFov <= 0) cfg.aimFov = 25.0;
-                    cfg.aimFov = Math.max(2.0, Math.min(90.0, cfg.aimFov));
+                    cfg.aimFov = Math.max(2.0, Math.min(360.0, cfg.aimFov));
                     if (cfg.aimBowMinChargeTicks <= 0) cfg.aimBowMinChargeTicks = 20;
                     cfg.aimBowMinChargeTicks = Math.max(3, Math.min(40, cfg.aimBowMinChargeTicks));
                     if (waypointMigration) cfg.save();

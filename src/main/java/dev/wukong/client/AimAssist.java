@@ -15,79 +15,61 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.world.InteractionHand;
+import dev.wukong.client.combat.BowMotion;
+import dev.wukong.client.combat.BowMotion.V;
+import dev.wukong.client.combat.VanillaBowModel;
 
 /** Client-side target selection and optional bow release, no custom packets. */
 public final class AimAssist {
-    private static boolean firedThisDraw;
+    private static final dev.wukong.client.combat.BowReleaseCycle RELEASE = new dev.wukong.client.combat.BowReleaseCycle();
     private static int focusEntityId = Integer.MIN_VALUE;
     private static UUID lockedTargetUuid;
-    // Observe rendered mobs each client tick. Networked mobs may expose stale delta movement.
-    private static final Map<Integer, TrackedMotion> MOTION = new HashMap<>();
-    private static Object trackedLevel;
-    private static int sampleCounter;
+    private static final Map<UUID, BowMotion.Tracker> MOTION = new HashMap<>();
+    private static BowMotion.Tracker ownMotion = new BowMotion.Tracker();
+    private static Object trackedLevel, trackedPlayer;
+    private static int sampleCounter, previousTick = Integer.MIN_VALUE;
 
-    private static final class TrackedMotion {
-        private Vec3 position;
-        private Vec3 smoothedVelocity = Vec3.ZERO;
-        private int tick;
-        private int observations;
-
-        private TrackedMotion(Vec3 position, int tick) {
-            this.position = position;
-            this.tick = tick;
-        }
+    private static void resetMotion(Minecraft mc) {
+        MOTION.clear(); ownMotion = new BowMotion.Tracker();
+        trackedLevel = mc.level; trackedPlayer = mc.player;
+        previousTick = Integer.MIN_VALUE; sampleCounter = 0;
+        lockedTargetUuid = null; focusEntityId = Integer.MIN_VALUE; RELEASE.reset();
+        BowDiagnostics.clear();
     }
-
-    private static void updateMotion(Minecraft mc) {
-        if (mc.level != trackedLevel) {
-            MOTION.clear();
-            trackedLevel = mc.level;
-            sampleCounter = 0;
-            lockedTargetUuid = null;
-            focusEntityId = Integer.MIN_VALUE;
-        }
+    private static V vec(Vec3 v) { return new V(v.x,v.y,v.z); }
+    private static BowMotion.Mode motionMode(LivingEntity e) {
+        if (e.isFallFlying()) return BowMotion.Mode.ELYTRA;
+        if (e.isInWater()) return BowMotion.Mode.WATER;
+        return e.onGround() ? BowMotion.Mode.GROUND : BowMotion.Mode.AIR;
+    }
+    private static void updateMotion(Minecraft mc, boolean enabled) {
+        if (mc.level != trackedLevel || mc.player != trackedPlayer) resetMotion(mc);
         if (mc.level == null || mc.player == null) return;
         int tick = mc.player.tickCount;
-        Set<Integer> alive = (++sampleCounter % 40 == 0) ? new HashSet<>() : null;
+        if (previousTick != Integer.MIN_VALUE && (tick < previousTick || (long)tick-previousTick > 5)) resetMotion(mc);
+        previousTick = tick;
+        if (!enabled) { MOTION.clear(); ownMotion = new BowMotion.Tracker(); return; }
+        ownMotion.update(vec(mc.player.position()),tick,motionMode(mc.player));
+        Set<UUID> alive = (++sampleCounter % 40 == 0) ? new HashSet<>() : null;
         for (Entity entity : mc.level.entitiesForRendering()) {
-            if (!(entity instanceof LivingEntity) || entity == mc.player) continue;
-            if (alive != null) alive.add(entity.getId());
-            Vec3 position = entity.position();
-            TrackedMotion state = MOTION.get(entity.getId());
-            if (state == null || tick < state.tick) {
-                MOTION.put(entity.getId(), new TrackedMotion(position, tick));
-                continue;
-            }
-            if (tick == state.tick) continue;
-            int deltaTicks = tick - state.tick;
-            Vec3 measured = position.subtract(state.position).scale(1.0 / deltaTicks);
-            // Treat teleports, long pauses, and large correction packets as non-predictable.
-            if (deltaTicks > 5 || measured.lengthSqr() > 1.44) {
-                state.smoothedVelocity = Vec3.ZERO;
-                state.observations = 0;
-            } else {
-                state.smoothedVelocity = state.observations == 0 ? measured
-                        : state.smoothedVelocity.scale(0.65).add(measured.scale(0.35));
-                state.observations++;
-            }
-            state.position = position;
-            state.tick = tick;
+            if (!(entity instanceof LivingEntity living) || entity == mc.player || !living.isAlive()) continue;
+            UUID id=living.getUUID(); if (alive != null) alive.add(id);
+            MOTION.computeIfAbsent(id,key->new BowMotion.Tracker()).update(vec(living.position()),tick,motionMode(living));
         }
         if (alive != null) MOTION.keySet().retainAll(alive);
     }
-
-    private static Vec3 measuredVelocity(LivingEntity target) {
-        TrackedMotion motion = MOTION.get(target.getId());
-        return motion == null || motion.observations == 0 ? Vec3.ZERO : motion.smoothedVelocity;
+    private static BowMotion.Sample sample(LivingEntity e) {
+        BowMotion.Tracker tracked = MOTION.get(e.getUUID());
+        return tracked==null ? BowMotion.Sample.empty(motionMode(e)) : tracked.sample();
     }
-
 
     public static void tick(Minecraft mc, boolean aimActive) {
         BenchConfig cfg = BenchConfig.INSTANCE;
-        if (mc.player == null || mc.level == null) { BowViewSplit.clear(); firedThisDraw = false; MOTION.clear(); trackedLevel = null; lockedTargetUuid = null; focusEntityId = Integer.MIN_VALUE; return; }
-        updateMotion(mc);
+        if (mc.player == null || mc.level == null) { BowViewSplit.clear(); resetMotion(mc); return; }
+        BowDiagnostics.clear();
+        updateMotion(mc, cfg.aimAssist && cfg.aimPrediction);
         boolean bowDrawn = mc.player.isUsingItem() && mc.player.getUseItem().getItem() instanceof BowItem;
-        if (!bowDrawn) firedThisDraw = false;
+        RELEASE.observe(mc.player.tickCount, bowDrawn, bowDrawn ? mc.player.getTicksUsingItem() : 0);
         if (!cfg.aimAssist || !aimActive) { BowViewSplit.clear();
             focusEntityId = Integer.MIN_VALUE;
             lockedTargetUuid = null;
@@ -97,11 +79,20 @@ public final class AimAssist {
         String mode = cfg.aimType == null ? "STANDARD" : cfg.aimType;
 
         int chargeTicks = bowDrawn ? mc.player.getTicksUsingItem() : 0;
-        // Fix 11: avoid early draw-time camera jumps by referencing the configured charge.
-        int modeledCharge = bowDrawn && cfg.steadyBowView
-                ? Math.max(chargeTicks, Math.max(3, cfg.aimBowMinChargeTicks))
-                : chargeTicks;
-        double arrowSpeed = bowDrawn ? 3.0 * BowItem.getPowerForTime(modeledCharge) : 0;
+        // Always model the actual charge. Steady view still smooths camera rotation below.
+        double arrowSpeed = bowDrawn ? 3.0 * BowItem.getPowerForTime(chargeTicks) : 0;
+        boolean prediction = cfg.aimPrediction && bowDrawn;
+        V inherited = prediction ? VanillaBowModel.inherited(vec(mc.player.getKnownMovement()),mc.player.onGround()) : V.ZERO;
+        int ping=-1;
+        if (mc.hasSingleplayerServer()) ping=0;
+        else if (mc.getConnection()!=null) {
+            var info=mc.getConnection().getPlayerInfo(mc.player.getUUID());
+            if (info!=null && info.getLatency()>0) ping=info.getLatency();
+        }
+        // Optional heuristic only. The displayed remote position may already be interpolated.
+        double observationAge=cfg.bowPredictionLatency && ping>0?Math.min(3.0,ping/100.0):0.0;
+        VanillaBowModel.Result chosenPrediction=null, lockedPrediction=null;
+        BowMotion.Sample chosenMotion=null, lockedMotion=null;
         double bestScore = Double.POSITIVE_INFINITY;
         LivingEntity selected = null;
         LivingEntity lockedCandidate = null;
@@ -109,8 +100,9 @@ public final class AimAssist {
         double lockedYawDiff = 0, lockedPitchDiff = 0;
         double effectiveRange = "MELEE".equals(mode) ? Math.min(5.0, cfg.aimRange) : cfg.aimRange;
         double radiusSquared = effectiveRange * effectiveRange;
-        double effectiveFov = "PRECISION".equals(mode) ? cfg.aimFov * 0.6 : cfg.aimFov;
+        double effectiveFov = cfg.aimFov >= 360.0 ? Double.POSITIVE_INFINITY : ("PRECISION".equals(mode) ? cfg.aimFov * 0.6 : cfg.aimFov);
         Vec3 shooter = mc.player.getEyePosition();
+        V launchOrigin=vec(shooter.add(0,-0.1,0)); // Approximate vanilla arrow spawn height.
 
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (!(entity instanceof LivingEntity target) || target == mc.player || !target.isAlive()) continue;
@@ -124,10 +116,13 @@ public final class AimAssist {
             // Unlike hasLineOfSight(entity), ALL_VISIBLE also accepts a partly exposed edge.
             Vec3 aimPoint = AimSpot.select(mc, target, shooter, cfg.aimSpot, cfg.aimRequireVisible);
             if (aimPoint == null) continue;
-            if (cfg.aimPrediction && bowDrawn && arrowSpeed > 0.15) {
-                aimPoint = predictBow(shooter, aimPoint, measuredVelocity(target), arrowSpeed);
+            BowMotion.Sample targetMotion = prediction?sample(target):null;
+            VanillaBowModel.Result solution=null;
+            if (prediction && arrowSpeed>.15 && !mc.player.isInWater() && targetMotion.mode()!=BowMotion.Mode.WATER) {
+                solution=VanillaBowModel.solve(launchOrigin,vec(aimPoint),targetMotion,inherited,arrowSpeed,observationAge);
             }
-            Vec3 difference = aimPoint.subtract(shooter);
+            Vec3 difference = solution==null?aimPoint.subtract(shooter):
+                    new Vec3(solution.direction().x(),solution.direction().y(),solution.direction().z());
             double horizontal = Math.hypot(difference.x, difference.z);
             if (horizontal < 0.001) continue;
             double yaw = Math.toDegrees(Math.atan2(-difference.x, difference.z));
@@ -143,6 +138,7 @@ public final class AimAssist {
                 lockedCandidate = target;
                 lockedYawDiff = yawDiff;
                 lockedPitchDiff = pitchDiff;
+                lockedPrediction=solution; lockedMotion=targetMotion;
             }
             double score = TargetRules.score(cfg.aimTargetPriority,
                     Math.sqrt(distanceSq), target.getHealth(), target.getMaxHealth(),
@@ -154,14 +150,17 @@ public final class AimAssist {
                 selected = target;
                 chosenYawDiff = yawDiff;
                 chosenPitchDiff = pitchDiff;
+                chosenPrediction=solution; chosenMotion=targetMotion;
             }
         }
         if (lockedCandidate != null) {
             selected = lockedCandidate;
             chosenYawDiff = lockedYawDiff;
             chosenPitchDiff = lockedPitchDiff;
+            chosenPrediction=lockedPrediction; chosenMotion=lockedMotion;
         }
         if (selected == null) { BowViewSplit.clear();
+            if(prediction) BowDiagnostics.publish(mc,ownMotion.sample(),null,inherited,null,ping,observationAge,"NO_TARGET");
             focusEntityId = Integer.MIN_VALUE;
             lockedTargetUuid = null;
             return;
@@ -169,8 +168,8 @@ public final class AimAssist {
         if (cfg.aimTillDeath) lockedTargetUuid = selected.getUUID();
         focusEntityId = "FOCUS".equals(mode) ? selected.getId() : Integer.MIN_VALUE;
         if (aimActive) {
-            double strength = Math.max(0.10, Math.min(1.0, cfg.aimAggression));
-            if ("PRECISION".equals(mode)) strength *= 0.55;
+            double strength = dev.wukong.client.combat.AimResponse.fromId(cfg.aimResponseProfile)
+                    .strength(cfg.aimAggression, "PRECISION".equals(mode));
             double yawStep = chosenYawDiff * strength;
             double pitchStep = chosenPitchDiff * strength;
             if (cfg.steadyBowView && bowDrawn && cfg.aimPrediction) {
@@ -181,6 +180,8 @@ public final class AimAssist {
             mc.player.setXRot(Mth.clamp(mc.player.getXRot() + (float) pitchStep, -90f, 90f));
         }
         BowViewSplit.trackIfEnabled(mc, selected);
+        if(prediction) BowDiagnostics.publish(mc,ownMotion.sample(),chosenMotion,inherited,chosenPrediction,ping,observationAge,
+                cfg.aimTriggerBow && !RELEASE.ready()?"RELEASE_WAIT_NEW_DRAW":cfg.aimTriggerBow && chargeTicks < cfg.aimBowMinChargeTicks?"RELEASE_WAIT_CHARGE":cfg.aimTriggerBow && chosenPrediction!=null && Math.hypot(chosenYawDiff,chosenPitchDiff)>1.75?"RELEASE_WAIT_ALIGNMENT":chosenPrediction!=null?"MODEL_OK":arrowSpeed<=.15?"LOW_CHARGE":chosenMotion==null||!chosenMotion.valid()?"WARMUP":"NO_MODEL_SOLUTION");
         // Optional vanilla melee attack while an acquired target stays within normal reach.
         // Does not bypass server validation, cooldown, range, or line of sight.
         if (cfg.aimHitTillDeath && mc.gameMode != null && !mc.player.isUsingItem()
@@ -202,38 +203,14 @@ public final class AimAssist {
         }
         // Only release an already-drawn bow. No automatic charging or attack packets.
         // A tighter angle prevents premature shots while the camera is still moving.
-        if (cfg.aimTriggerBow && bowDrawn && !firedThisDraw
+        if (cfg.aimTriggerBow && bowDrawn && RELEASE.ready()
                 && chargeTicks >= cfg.aimBowMinChargeTicks
+                && (!prediction || chosenPrediction != null)
                 && mc.gameMode != null
                 && Math.hypot(chosenYawDiff, chosenPitchDiff) <= 1.75) {
             mc.gameMode.releaseUsingItem(mc.player);
-            firedThisDraw = true;
+            RELEASE.markReleased();
         }
-    }
-
-    /** Approximate vanilla bow lead. Models drag/gravity per tick; ignores random spread and collision. */
-    private static Vec3 predictBow(Vec3 shooter, Vec3 target, Vec3 velocity, double arrowSpeed) {
-        Vec3 predicted = target;
-        for (int i = 0; i < 4; i++) {
-            double horizontal = Math.hypot(predicted.x - shooter.x, predicted.z - shooter.z);
-            double flightTicks = Math.min(100.0, horizontal / Math.max(0.15, arrowSpeed));
-            // Iteratively solve travel-time with horizontal drag; aimed at ordinary low-arc shots.
-            for (int j = 0; j < 3; j++) {
-                double distanceFactor = (1.0 - Math.pow(0.99, flightTicks)) / 0.01;
-                double nominal = Math.max(0.001, arrowSpeed * distanceFactor);
-                flightTicks = Math.min(100.0, flightTicks * horizontal / nominal);
-            }
-            double drop = 0.0;
-            double vy = 0.0;
-            int whole = (int)Math.floor(flightTicks);
-            for (int step = 0; step < whole; step++) {
-                drop += -vy;
-                vy = vy * 0.99 - 0.05;
-            }
-            drop += -vy * (flightTicks - whole);
-            predicted = target.add(velocity.scale(flightTicks)).add(0, drop, 0);
-        }
-        return predicted;
     }
 
     private AimAssist() {}

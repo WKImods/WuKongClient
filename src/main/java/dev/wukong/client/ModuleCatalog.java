@@ -16,6 +16,7 @@ final class ModuleCatalog {
         new Group("combat","Kampf","Combat",()->c.aimAssist,v->c.aimAssist=v,CombatScreen::new),
         new Group("visual","Darstellung","Visuals",()->c.visualMasterEnabled,v->c.visualMasterEnabled=v,null),
         new Group("survival","Survival","Survival",()->c.survivalMasterEnabled,v->c.survivalMasterEnabled=v,null),
+        new Group("world_mining","Bauen","Building",()->c.worldMiningMaster,v->c.worldMiningMaster=v,null),
         new Group("inventory","Inventar","Smart Inventory",()->c.inventoryMasterEnabled,v->c.inventoryMasterEnabled=v,null),
         new Group("tooltips","Tooltips","Intelligent Tooltips",()->c.tooltipsMasterEnabled,v->c.tooltipsMasterEnabled=v,null),
         new Group("hud","HUD Studio","HUD Studio",()->c.hudMasterEnabled,v->c.hudMasterEnabled=v,HudStudioScreen::new));
@@ -37,9 +38,11 @@ final class ModuleCatalog {
         m("toolsaver","survival","Tool Saver","Tool Saver","Werkzeugbruch vermeiden.","Protect tool durability.",()->c.toolSaverEnabled,v->c.toolSaverEnabled=v),
         m("refill","survival","Auto Refill","Auto Refill","Verbrauchte Items nachf\u00FCllen.","Refill consumed items.",()->c.autoRefillEnabled,v->c.autoRefillEnabled=v),
         m("eat","survival","Auto Eat","Auto Eat","Bei niedrigem Hunger essen.","Eat at low hunger.",()->c.autoEatEnabled,v->c.autoEatEnabled=v),
+        m("area_nuker","world_mining","Area Nuker","Area Nuker","Automatischer Abbau im Umkreis.","Automatic excavation with selectable engine.",()->c.areaNuker,v->c.areaNuker=v),
+        m("precision_nuker","world_mining","Precision Nuker","Precision Nuker","Mehrblockabbau mit Werkzeug.","Multi-block mining with selectable engine.",()->c.precisionNuker,v->c.precisionNuker=v),
         m("shulker","inventory","Shulker-Vorschau","Shulker Preview","Inhalt im Tooltip.","Contents in item tooltip.",()->c.shulkerPreviewEnabled,v->c.shulkerPreviewEnabled=v),
         m("bundle","inventory","B\u00FCndel-Vorschau","Bundle Preview","Inhalt im Tooltip.","Contents in item tooltip.",()->c.bundlePreviewEnabled,v->c.bundlePreviewEnabled=v),
-        m("sort","inventory","Inventarsortierung","Inventory Sorter","Nur Einzelspieler; Hotbar bleibt unver\u00E4ndert.","Singleplayer only; preserves hotbar.",()->c.inventorySorterEnabled,v->c.inventorySorterEnabled=v),
+        m("sort","inventory","Inventarsortierung","Inventory Sorter","Single- und Multiplayer; Hotbar geschützt.","Singleplayer and multiplayer; preserves hotbar.",()->c.inventorySorterEnabled,v->c.inventorySorterEnabled=v),
         m("fish","inventory","Auto-Angeln","Auto Fish","Nur Einzelspieler; erster Wurf manuell.","Singleplayer only; cast first manually.",()->c.autoFishEnabled,v->c.autoFishEnabled=v),
         m("enchant","tooltips","Verzauberungsinfo","Enchantment Info","Wirkung und Stufe erkl\u00E4ren.","Explain effects and levels.",()->c.enchantmentInfoEnabled,v->c.enchantmentInfoEnabled=v),
         m("trade","tooltips","Handelsrechner","Trade Calculator","SHIFT \u00FCber einem Handelsangebot.","SHIFT over a trade offer.",()->c.tradeCalculatorEnabled,v->c.tradeCalculatorEnabled=v),
@@ -50,8 +53,8 @@ final class ModuleCatalog {
         m("legacy_hud","hud","Inventar-HUD","Inventory HUD","Bisherige kompakte Anzeige.","Legacy compact display.",()->c.inventoryHudEnabled,v->c.inventoryHudEnabled=v));
     private static Module m(String id,String group,String de,String en,String dd,String ee,BooleanSupplier on,Consumer<Boolean> set){return new Module(id,group,de,en,dd,ee,on,set);}
     static Group group(String id){return GROUPS.stream().filter(g->g.id().equals(id)).findFirst().orElseThrow();}
-    static String state(Module m){return !m.on().getAsBoolean()?"OFF":group(m.group()).on().getAsBoolean()?"ON":tr("PAUSE","PAUSED");}
+    static String state(Module m){return !m.on().getAsBoolean()?UiLabels.t("OFF"):group(m.group()).on().getAsBoolean()?UiLabels.t("ON"):tr("PAUSE","PAUSED");}
     static void toggle(Module m){m.set().accept(!m.on().getAsBoolean());c.save();EvolutionUi.note(m.name()+": "+state(m));}
-    static void toggle(Group g){g.set().accept(!g.on().getAsBoolean());c.save();EvolutionUi.note(g.name()+" master: "+(g.on().getAsBoolean()?"ON":"OFF"));}
+    static void toggle(Group g){g.set().accept(!g.on().getAsBoolean());c.save();EvolutionUi.note(g.name()+UiLabels.t(" master: ")+(g.on().getAsBoolean()?UiLabels.t("ON"):UiLabels.t("OFF")));}
     private ModuleCatalog(){}
 }

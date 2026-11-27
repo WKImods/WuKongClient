@@ -21,7 +21,7 @@ public final class BenchScreen extends Screen {
     private record Row(ModuleCatalog.Group group,ModuleCatalog.Module module){}
     private record RowButtons(Button name,Button toggle,Button config,Button star){}
     public BenchScreen(){this(false);}
-    public BenchScreen(boolean quick){super(Component.literal(quick?"WuKong Quick Menu":"WuKongClient 6.0"));this.quick=quick;favorites=quick;}
+    public BenchScreen(boolean quick){super(Component.literal(quick?UiLabels.t("WuKong Quick Menu"):"WuKongClient "+EvolutionUi.installed()));this.quick=quick;favorites=quick;}
     private static String tr(String de,String en){return ModuleCatalog.tr(de,en);}
     private void open(Screen s){BenchConfig.INSTANCE.save();Minecraft.getInstance().gui.setScreen(s);}
     private Button button(String text,int x,int y,int w,int h,Button.OnPress action){return addRenderableWidget(Button.builder(Component.literal(text),action).bounds(x,y,Math.max(1,w),h).build());}
@@ -38,15 +38,16 @@ public final class BenchScreen extends Screen {
             final int n=i;int y=top+i*23;
             Button a=button("",x+4,y,nameW,20,b->action(n,0));
             Button t=button("",x+8+nameW,y,toggleW,20,b->action(n,1));
-            Button c=button("Config",x+12+nameW+toggleW,y,cfgW,20,b->action(n,2));
+            Button c=button(UiLabels.t("Config"),x+12+nameW+toggleW,y,cfgW,20,b->action(n,2));
             Button f=button("*",x+w-starW-4,y,starW,20,b->action(n,3));
             widgets[i]=new RowButtons(a,t,c,f);
         }
-        int fy=height-25, unit=(w-16)/5;
+        int fy=height-25, unit=(w-28)/6;
         prev=button("<",x+4,fy,unit,20,b->{page--;refresh();});
         next=button(">",x+8+unit,fy,unit,20,b->{page++;refresh();});
         button(tr("Profile","Profiles"),x+12+2*unit,fy,unit,20,b->open(new ServerProfileScreen()));
         button(quick?tr("Alle","All"):tr("Schnell","Quick"),x+16+3*unit,fy,unit-2,20,b->open(new BenchScreen(!quick)));
+        button(UiLabels.t("Research"),x+20+4*unit,fy,unit,20,b->open(new ResearchScreen(this)));
         button(tr("Zur\u00FCck","Back"),x+w-unit-4,fy,unit,20,b->onClose());
         search.setResponder(s->{query=s;page=0;refresh();});refresh();
     }
@@ -70,7 +71,7 @@ public final class BenchScreen extends Screen {
                 String name=(expanded.contains(g.id())||favorites||!q.isBlank()?"- ":"+ ")+g.name();
                 b.name.setMessage(Component.literal(font.plainSubstrByWidth(name,b.name.getWidth()-8)));
                 b.name.setTooltip(Tooltip.create(Component.literal(g.name())));
-                b.toggle.setMessage(Component.literal((b.toggle.getWidth()>=68?"MASTER ":"M: ")+(g.on().getAsBoolean()?"ON":"OFF")));
+                b.toggle.setMessage(Component.literal((b.toggle.getWidth()>=68?UiLabels.t("MASTER "):"M: ")+(g.on().getAsBoolean()?UiLabels.t("ON"):UiLabels.t("OFF"))));
                 b.toggle.setTooltip(Tooltip.create(Component.literal(tr("Master pausiert alle Module.","Master pauses all child modules."))));
                 b.config.visible=g.advanced()!=null;b.config.active=g.advanced()!=null;b.star.visible=false;
             }else{
@@ -100,7 +101,7 @@ public final class BenchScreen extends Screen {
     @Override public boolean mouseScrolled(double mx,double my,double sx,double sy){if(my>=top&&my<bottom&&sy!=0){page+=sy>0?-1:1;refresh();return true;}return super.mouseScrolled(mx,my,sx,sy);}
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mx,int my,float p){
         g.fill(x,4,x+w,height-3,EvolutionUi.panel());g.fill(x,4,x+w,6,EvolutionUi.accent());
-        g.text(font,quick?"WUKONG / QUICK MENU":"WUKONGCLIENT / 6.0 BETA",x+6,10,EvolutionUi.accent(),true);
+        g.text(font,quick?UiLabels.t("WUKONG / QUICK MENU"):"WUKONGCLIENT / "+EvolutionUi.installed(),x+6,10,EvolutionUi.accent(),true);
         String active=font.plainSubstrByWidth(ServerProfiles.activeLabel(),w-12);g.text(font,active,x+6,20,0xFFB7C7D2,false);
         if(data.isEmpty())g.text(font,tr("Keine Module gefunden.","No matching modules."),x+8,top+4,0xFFB7C7D2,true);
         String pText=(page+1)+" / "+Math.max(1,(data.size()+widgets.length-1)/widgets.length);
