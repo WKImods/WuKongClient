@@ -2,6 +2,87 @@
 
 Notable changes to WuKongClient are recorded here. Internal development milestones are not necessarily separate public releases.
 
+## 6.4.3-alpha.1 - Aim Response Profiles
+
+- Added configurable response profiles.
+- Improved configuration and localization coverage.
+- Preserved existing profile compatibility.
+
+## 6.4.2 - Extended FOV
+
+- Extended the configurable in-game field of view.
+
+## 6.4.1 - Localization and Quality Update
+
+- Expanded German and English localization.
+- Integrated additional regression checks.
+- Revised bow release-cycle handling.
+- Preserved existing report formats and module settings.
+
+## 6.3.4 - Combat Intelligence
+
+- Revised Minecraft movement and bow motion models.
+- Added movement-state diagnostics and model checks.
+- Integrated the Research Studio compatibility hotfix.
+- Corrected the clipboard compilation issue in alpha.2.
+
+## 6.2.5 - Research Studio
+
+- Persistent report archive.
+- CSV viewer and JSON export.
+- Duplicate report detection.
+- Report comparisons and session summaries.
+- Absolute report paths and desktop integration.
+
+## 6.2.4 - Test Laboratory
+
+- Configurable synthetic test suites.
+- Seed-based reproducibility.
+- Expected versus actual result comparisons.
+- Progress tracking, cancellation and CSV export.
+
+## 6.2.3.1 - Inventory Sorter Rework
+
+- Singleplayer and multiplayer inventory sorting.
+- Multiple sorting strategies.
+- Individual slot protection.
+- Optional stack merging.
+- Component-aware inventory handling.
+
+## 6.2.3 - Detection Engine
+
+- Local inventory consistency findings.
+- Observation classification.
+- Bounded finding history and false-positive filtering.
+
+## 6.2.2 - Inventory Intelligence
+
+- Item component comparison.
+- Slot-level observations.
+- Separate container views.
+- Searchable inventory monitor.
+- Improved latency chart.
+
+## 6.2.1 - Session Intelligence
+
+- Inventory session dashboard.
+- Latency statistics and history.
+- Individual item changes.
+- Item icons and readable names.
+
+## 6.2.0 - Research Foundation
+
+- Dedicated Research Lab interface.
+- Historical bug references.
+- Passive inventory observations.
+- Synthetic regression fixtures.
+
+## 6.1 - Client Extensions
+
+- Expanded building and mining utilities.
+- Additional module configuration and hotkey integration.
+
+
 ## 6.0.1-beta.1 — Smart Auto Feeder
 
 ### Added
